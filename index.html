@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>투상도 마스터</title>
+<style>
+  :root{
+    --bg:#0b2540; --bg-deep:#081b30; --panel:#123459; --panel-light:#1c4474;
+    --line-color:#eaf4ff; --text:#eaf4ff; --text-dim:#9fc1e0;
+    --accent:#ffb454; --correct:#5fd86f; --wrong:#ff6b6b; --grid:rgba(234,244,255,0.06);
+    --face-top:#2a5d94; --face-side:#1c4474; --face-front:#356ea8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/40px 40px,
+      var(--bg);
+    color:var(--text); font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif;
+    min-height:100vh; padding:20px 14px 60px;
+  }
+  .wrap{max-width:780px;margin:0 auto;}
+  h1{font-size:1.5rem;letter-spacing:0.02em;margin:0 0 4px;}
+  .subtitle{color:var(--text-dim);font-size:0.95rem;margin-bottom:20px;}
+  .top-eyebrow{font-size:0.75rem;letter-spacing:0.18em;color:var(--accent);text-transform:uppercase;margin-bottom:6px;font-weight:700;}
+  .panel{background:var(--panel);border:1px solid rgba(234,244,255,0.12);border-radius:14px;padding:22px;margin-bottom:18px;}
+  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:560px){.mode-grid{grid-template-columns:1fr;}}
+  .mode-card{background:var(--panel-light);border:1px solid rgba(234,244,255,0.14);border-radius:12px;padding:18px;text-align:left;cursor:pointer;color:var(--text);transition:transform .15s, border-color .15s;}
+  .mode-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+  .mode-card .num{font-size:0.75rem;color:var(--accent);font-weight:700;letter-spacing:0.1em;}
+  .mode-card .title{font-size:1.12rem;font-weight:700;margin:6px 0 4px;}
+  .mode-card .desc{font-size:0.87rem;color:var(--text-dim);line-height:1.4;}
+  .btn{appearance:none;border:none;border-radius:10px;background:var(--accent);color:#1a1306;font-weight:700;font-size:1rem;padding:14px 20px;cursor:pointer;min-height:52px;}
+  .btn:hover{filter:brightness(1.06);}
+  .btn.secondary{background:transparent;border:1px solid rgba(234,244,255,0.3);color:var(--text);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  @media (max-width:560px){ .btn{min-height:56px;} }
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px;}
+  .progress{font-size:0.9rem;color:var(--text-dim);}
+  .score-pill{background:var(--panel-light);border-radius:20px;padding:4px 12px;font-size:0.85rem;color:var(--accent);font-weight:700;}
+  .prompt{font-size:1.05rem;margin:14px 0 12px;line-height:1.5;}
+  .stagebox{display:flex;justify-content:center;background:var(--bg-deep);border:1px solid rgba(234,244,255,0.12);border-radius:12px;padding:16px;margin-bottom:12px;}
+  .stagebox svg{max-width:280px;width:100%;height:auto;}
+  .choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  @media (max-width:480px){.choices{grid-template-columns:1fr;}}
+  .choice-btn{background:var(--panel-light);border:2px solid rgba(234,244,255,0.16);border-radius:10px;color:var(--text);font-size:0.95rem;font-weight:600;padding:14px 16px;cursor:pointer;text-align:center;min-height:54px;display:flex;align-items:center;justify-content:center;}
+  @media (max-width:560px){ .choice-btn{padding:16px;min-height:60px;font-size:1rem;} }
+  .choice-btn:hover{border-color:var(--accent);}
+  .choice-btn.selected{border-color:var(--accent);background:rgba(255,180,84,0.16);box-shadow:0 0 0 2px rgba(255,180,84,0.35) inset;}
+  .choice-btn.correct{background:rgba(95,216,111,0.18);border-color:var(--correct);}
+  .choice-btn.wrong{background:rgba(255,107,107,0.18);border-color:var(--wrong);}
+  .choice-btn:disabled{cursor:default;}
+  .choice-btn svg{width:100%;height:88px;}
+  .choice-btn.hasimg{padding:8px;}
+  .feedback{margin-top:14px;padding:14px 16px;border-radius:10px;background:rgba(234,244,255,0.06);border-left:4px solid var(--accent);font-size:0.95rem;line-height:1.5;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{border-left-color:var(--correct);}
+  .feedback.bad{border-left-color:var(--wrong);}
+  .nextrow{display:flex;justify-content:flex-end;margin-top:16px;gap:10px;flex-wrap:wrap;}
+  .hidden{display:none !important;}
+
+  /* 제도 선 */
+  .ln{fill:none;stroke:var(--line-color);}
+  .ln-outline{stroke-width:2.4;stroke-linejoin:round;}
+  .ln-hidden{stroke-width:1.6;stroke-dasharray:5,3;}
+  .ln-center{stroke-width:1;stroke-dasharray:10,2,2,2;}
+  .ln-thin{stroke-width:1;}
+  .ln.hl{stroke:var(--accent) !important;filter:drop-shadow(0 0 4px var(--accent));}
+  .face-t{fill:var(--face-top);stroke:var(--line-color);stroke-width:2;stroke-linejoin:round;}
+  .face-s{fill:var(--face-side);stroke:var(--line-color);stroke-width:2;stroke-linejoin:round;}
+  .face-f{fill:var(--face-front);stroke:var(--line-color);stroke-width:2;stroke-linejoin:round;}
+  .lbl{fill:var(--text-dim);font-size:11px;font-family:inherit;font-weight:700;}
+  .lbl.hl{fill:var(--accent);}
+
+  /* 배우기 */
+  .learn-card{background:var(--panel-light);border:1px solid rgba(234,244,255,0.14);border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+  .learn-card h3{margin:0 0 6px;font-size:1.05rem;color:var(--accent);}
+  .learn-card p{margin:6px 0;font-size:0.93rem;line-height:1.6;color:var(--text);}
+  .learn-card .cap{font-size:0.82rem;color:var(--text-dim);text-align:center;margin-top:4px;}
+  .learn-figs{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:8px 0;}
+  .learn-fig{flex:1;min-width:120px;max-width:170px;text-align:center;}
+  .learn-fig svg{width:100%;height:auto;background:var(--bg-deep);border-radius:8px;border:1px solid rgba(234,244,255,0.1);}
+  .toggle-row{display:flex;gap:8px;justify-content:center;margin:10px 0;}
+  .toggle-row .btn{padding:9px 16px;min-height:auto;font-size:0.9rem;}
+  .toggle-row .btn.off{background:transparent;border:1px solid rgba(234,244,255,0.3);color:var(--text);}
+
+  /* HUD (fx) */
+  #fx-hud{margin-bottom:12px;}
+</style>
+</head>
+<body>
+<!-- 결과 수집(교사가 ?rc= 링크로 자기 구글시트 연결) -->
+<script src="https://hongyul67-cpu.github.io/links/collector.js" data-tool="투상도 마스터"></script>
+<!-- 연출(파티클·펀치·흔들림·클리어 배너·소리토글) -->
+<script src="https://hongyul67-cpu.github.io/links/fx.js"></script>
+
+<div class="wrap">
+
+  <!-- ================= 허브 ================= -->
+  <div id="screen-hub">
+    <div class="top-eyebrow">자동설비 기능사 · 도면읽기 시리즈</div>
+    <h1>📐 투상도 마스터</h1>
+    <div class="subtitle">3D 물체를 정면·평면·측면에서 본 그림(투상도)으로 읽는 연습이에요. 배우고 → 풀고 → 제출까지.</div>
+    <div class="panel">
+      <div class="mode-grid">
+        <div class="mode-card" onclick="openLearn()">
+          <div class="num">배우기</div>
+          <div class="title">📖 투상도 개념 배우기</div>
+          <div class="desc">투상법 종류·제3각법 배치·3면도 원리를 그림으로 익혀요.</div>
+        </div>
+        <div class="mode-card" onclick="openMode('m1')">
+          <div class="num">모드 1</div>
+          <div class="title">🧭 투상법 종류 판별</div>
+          <div class="desc">정투상·등각·사투상·투시투상을 구분해요. (8문제)</div>
+        </div>
+        <div class="mode-card" onclick="openMode('m2')">
+          <div class="num">모드 2</div>
+          <div class="title">🧩 3면도 배치·이름</div>
+          <div class="desc">제3각법에서 정면도·평면도·우측면도 위치를 익혀요. (8문제)</div>
+        </div>
+        <div class="mode-card" onclick="openMode('m3')">
+          <div class="num">모드 3</div>
+          <div class="title">🔎 입체 → 투상도 찾기</div>
+          <div class="desc">3D 입체를 지정 방향에서 본 투상도를 골라요. (8문제)</div>
+        </div>
+      </div>
+      <div class="nextrow" style="justify-content:center;margin-top:16px;">
+        <button class="btn" onclick="openMode('exam')">🏁 종합 점검 (12문제)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 배우기 ================= -->
+  <div id="screen-learn" class="hidden">
+    <div class="topbar"><button class="btn secondary" onclick="goHub()">← 전체 메뉴</button></div>
+    <div class="top-eyebrow">배우기</div>
+    <h1>📖 투상도 개념</h1>
+    <div class="subtitle">아래를 훑어본 뒤 모드에서 연습해요.</div>
+    <div id="learn-body"></div>
+    <div class="nextrow" style="justify-content:center;">
+      <button class="btn" onclick="openMode('m1')">연습하러 가기 →</button>
+    </div>
+  </div>
+
+  <!-- ================= 퀴즈 ================= -->
+  <div id="screen-quiz" class="panel hidden">
+    <div class="topbar">
+      <button class="btn secondary" onclick="goHub()">← 전체 메뉴</button>
+      <span class="progress" id="q-progress"></span>
+      <span class="score-pill" id="q-score"></span>
+    </div>
+    <div id="fx-hud"></div>
+    <div class="prompt" id="q-prompt"></div>
+    <div id="q-stage"></div>
+    <div class="choices" id="q-choices"></div>
+    <div class="feedback" id="q-feedback"></div>
+    <div class="nextrow">
+      <button class="btn" id="q-submit" onclick="submitQ()" disabled>제출</button>
+      <button class="btn secondary" id="q-next" onclick="nextQ()" disabled>다음 →</button>
+    </div>
+  </div>
+
+  <!-- ================= 결과 ================= -->
+  <div id="screen-result" class="panel hidden">
+    <div class="prompt" id="r-text" style="font-size:1.2rem;text-align:center;"></div>
+    <div class="nextrow" style="justify-content:center;">
+      <button class="btn" id="r-collect" onclick="submitResult()" style="display:none;">🧑‍🏫 선생님께 결과 제출</button>
+    </div>
+    <div class="nextrow" style="justify-content:center;">
+      <button class="btn secondary" onclick="goHub()">전체 메뉴로</button>
+      <button class="btn" id="r-retry">다시 풀기</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============ 공통 유틸 ============ */
+function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+function svgWrap(inner, vb){ return `<svg viewBox="${vb||'0 0 120 120'}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`; }
+function rcEndpoint(){ const rc=window.ResultCollector; return !!(rc && rc.config && rc.config.endpoint); }
+function fxRight(el){ if(window.FX){ FX.burst(el,{n:12}); FX.punch(el); } }
+function fxWrong(el){ if(window.FX){ FX.shake(el); FX.flash(); } }
+function fxStars(miss){ return window.FX ? FX.starsFor(miss) : 3; }
+function fxBanner(o){ if(window.FX) FX.banner(o); }
+
+/* ============ 투상도(2D 뷰) 그림 ============ */
+const VIEW = {
+  rect:      {sig:'rect',   svg:`<rect class="ln ln-outline" x="34" y="44" width="52" height="32"/>`},
+  square:    {sig:'square', svg:`<rect class="ln ln-outline" x="40" y="40" width="40" height="40"/>`},
+  circle:    {sig:'circle', svg:`<circle class="ln ln-outline" cx="60" cy="60" r="22"/><line class="ln ln-center" x1="30" y1="60" x2="90" y2="60"/><line class="ln ln-center" x1="60" y1="30" x2="60" y2="90"/>`},
+  Lshape:    {sig:'L',      svg:`<path class="ln ln-outline" d="M36 42 h26 v18 h22 v18 h-48 z"/>`},
+  triangle:  {sig:'tri',    svg:`<path class="ln ln-outline" d="M60 40 L86 80 L34 80 Z"/>`},
+  triRight:  {sig:'triR',   svg:`<path class="ln ln-outline" d="M36 78 L84 78 L36 42 Z"/>`},
+  steps:     {sig:'steps',  svg:`<path class="ln ln-outline" d="M36 78 v-14 h20 v-14 h28 v28 z"/>`},
+  rectHole:  {sig:'rectHoleV', svg:`<rect class="ln ln-outline" x="34" y="44" width="52" height="32"/><circle class="ln ln-outline" cx="60" cy="60" r="9"/><line class="ln ln-center" x1="42" y1="60" x2="78" y2="60"/><line class="ln ln-center" x1="60" y1="48" x2="60" y2="72"/>`},
+  rectDash:  {sig:'rectDash', svg:`<rect class="ln ln-outline" x="34" y="44" width="52" height="32"/><line class="ln ln-hidden" x1="51" y1="44" x2="51" y2="76"/><line class="ln ln-hidden" x1="69" y1="44" x2="69" y2="76"/>`},
+};
+
+/* ============ 3D 입체(등각) & 정답 뷰 ============ */
+/* 각 입체: iso(등각 그림) + 정면(front)·평면(top)·우측면(side) 뷰 키 */
+const SOLIDS = [
+  { key:'Lblock', name:'L자 블록', iso:
+    `<path class="face-f" d="M30 55 h34 v14 h20 v22 l-16 8 v-22 h-20 v22 l-18 -9 z"/>
+     <path class="face-t" d="M30 55 l14 -8 h34 l-14 8 z"/>
+     <path class="face-t" d="M64 69 l14 -8 h20 l-14 8 z"/>
+     <path class="face-s" d="M78 61 l16 -9 v22 l-16 8 z"/>`,
+    front:'Lshape', top:'rect', side:'rect' },
+  { key:'cyl', name:'원기둥(세움)', iso:
+    `<ellipse class="face-t" cx="60" cy="42" rx="26" ry="11"/>
+     <path class="face-f" d="M34 42 v34 a26 11 0 0 0 52 0 v-34" />
+     <path class="ln ln-outline" d="M34 42 v34 a26 11 0 0 0 52 0 v-34"/>
+     <ellipse class="ln ln-outline" cx="60" cy="42" rx="26" ry="11" fill="none"/>`,
+    front:'rect', top:'circle', side:'rect' },
+  { key:'triPrism', name:'삼각기둥', iso:
+    `<path class="face-f" d="M34 82 L60 40 L60 62 L38 92 z"/>
+     <path class="face-t" d="M34 82 L60 40 L84 52 L58 94 z" opacity="0.85"/>
+     <path class="face-s" d="M60 40 L84 52 L84 72 L60 62 z"/>`,
+    front:'triangle', top:'rect', side:'rect' },
+  { key:'step', name:'계단 블록', iso:
+    `<path class="face-f" d="M30 60 h24 v-12 h22 v34 l-16 8 v-14 h-14 v14 l-16 -8 z" opacity="0.95"/>
+     <path class="face-t" d="M30 60 l16 -8 h24 l-16 8 z"/>
+     <path class="face-t" d="M54 48 l16 -8 h6 l-16 8 z"/>
+     <path class="face-s" d="M76 48 l16 -8 v34 l-16 8 z"/>`,
+    front:'steps', top:'rect', side:'rect' },
+  { key:'wedge', name:'쐐기(경사) 블록', iso:
+    `<path class="face-s" d="M34 84 L84 84 L100 75 L50 75 z" opacity="0.7"/>
+     <path class="face-t" d="M34 46 L84 84 L100 75 L50 37 z" opacity="0.9"/>
+     <path class="face-f" d="M34 84 L84 84 L34 46 z"/>`,
+    front:'triRight', top:'rect', side:'rect' },
+  { key:'holeblk', name:'구멍 뚫린 블록(위→아래)', iso:
+    `<path class="face-f" d="M32 58 h40 v24 l-20 10 v-24 z"/>
+     <path class="face-t" d="M32 58 l20 -10 h40 l-20 10 z"/>
+     <path class="face-s" d="M72 58 l20 -10 v24 l-20 10 z"/>
+     <ellipse class="ln ln-outline" cx="62" cy="53" rx="9" ry="4.5" fill="var(--bg-deep)"/>`,
+    front:'rectDash', top:'rectHole', side:'rectDash' },
+];
+const SOLID_MAP = Object.fromEntries(SOLIDS.map(s=>[s.key,s]));
+const VIEWNAME = {front:'정면도(앞)', top:'평면도(위)', side:'우측면도(오른쪽)'};
+
+/* ============ 배우기 내용 ============ */
+function projFig(kind){
+  if(kind==='ortho') return svgWrap(
+    `<rect class="ln ln-thin" x="18" y="18" width="30" height="24"/>
+     <rect class="ln ln-outline" x="18" y="50" width="30" height="30"/>
+     <rect class="ln ln-thin" x="56" y="50" width="24" height="30"/>
+     <line class="ln ln-center" x1="33" y1="14" x2="33" y2="84"/>
+     <text class="lbl" x="33" y="96" text-anchor="middle">3면도</text>`);
+  if(kind==='iso') return svgWrap(
+    `<path class="face-t" d="M40 34 l20 -12 l20 12 l-20 12 z"/>
+     <path class="face-f" d="M40 34 v28 l20 12 v-28 z"/>
+     <path class="face-s" d="M80 34 v28 l-20 12 v-28 z"/>
+     <text class="lbl" x="60" y="92" text-anchor="middle">120° · 3축 같은 척도</text>`);
+  if(kind==='oblique') return svgWrap(
+    `<rect class="face-f" x="30" y="44" width="34" height="34"/>
+     <path class="face-t" d="M30 44 l18 -14 h34 l-18 14 z"/>
+     <path class="face-s" d="M64 44 l18 -14 v34 l-18 14 z"/>
+     <text class="lbl" x="60" y="92" text-anchor="middle">정면=실형, 옆은 경사</text>`);
+  if(kind==='persp') return svgWrap(
+    `<circle cx="96" cy="30" r="2.2" fill="var(--accent)"/>
+     <rect class="face-f" x="26" y="46" width="34" height="30"/>
+     <path class="ln ln-thin" d="M26 46 L96 30 M60 46 L96 30 M26 76 L96 30 M60 76 L96 30"/>
+     <path class="face-t" d="M26 46 L45 39 L79 39 L60 46 z" opacity="0.7"/>
+     <text class="lbl" x="60" y="92" text-anchor="middle">소실점으로 모임(원근)</text>`);
+  return '';
+}
+function layout3rd(hl){
+  // 제3각법 배치: 평면도(위) · 정면도(가운데) · 우측면도(오른쪽)
+  const c = k => hl===k ? ' hl' : '';
+  return svgWrap(
+    `<rect class="ln ln-outline${c('top')}" x="40" y="14" width="34" height="22"/>
+     <text class="lbl${c('top')}" x="57" y="10" text-anchor="middle">평면도</text>
+     <rect class="ln ln-outline${c('front')}" x="40" y="44" width="34" height="30"/>
+     <text class="lbl${c('front')}" x="57" y="86" text-anchor="middle">정면도</text>
+     <rect class="ln ln-outline${c('side')}" x="82" y="44" width="24" height="30"/>
+     <text class="lbl${c('side')}" x="94" y="86" text-anchor="middle">우측면도</text>
+     <line class="ln ln-center" x1="57" y1="8" x2="57" y2="80"/>
+     <line class="ln ln-center" x1="34" y1="59" x2="112" y2="59"/>`, '0 -8 120 108');
+}
+function layout1st(){
+  // 제1각법: 평면도 아래, 우측면도 왼쪽 (위치로 구분 — 라벨은 짧게)
+  return svgWrap(
+    `<rect class="ln ln-outline" x="48" y="14" width="34" height="30"/>
+     <text class="lbl" x="65" y="9" text-anchor="middle">정면도</text>
+     <rect class="ln ln-outline" x="48" y="52" width="34" height="22"/>
+     <text class="lbl" x="65" y="88" text-anchor="middle">평면도(아래)</text>
+     <rect class="ln ln-outline" x="12" y="14" width="26" height="30"/>
+     <text class="lbl" x="25" y="9" text-anchor="middle">우측면도</text>`, '0 -8 120 108');
+}
+const LEARN = [
+  {h:'투상도란?', p:'3차원 물체를 평평한 종이에 정확히 나타내려고, 여러 방향(앞·위·옆)에서 본 모습을 그린 그림이에요. 기계 도면은 대부분 <b>정투상법</b>으로 그린 3면도를 씁니다.'},
+  {h:'투상법 4가지', figs:[['ortho','정투상법'],['iso','등각투상법'],['oblique','사투상법'],['persp','투시투상법']],
+    p:'<b>정투상법</b>: 각 방향에서 수직으로 본 모습(도면용). <b>등각투상</b>: 3축이 120°, 세 면을 한 그림에. <b>사투상</b>: 정면은 실제 모양, 옆면만 비스듬히. <b>투시투상</b>: 멀수록 작아지는 원근(그림용).'},
+  {h:'우리가 쓰는 건 제3각법', fig3:true,
+    p:'한국(KS)·미국 도면은 <b>제3각법</b>을 씁니다. <b>정면도</b>를 가운데 두고, 본 방향 <b>그대로</b> 배치해요 — 위에서 본 <b>평면도는 위</b>, 오른쪽에서 본 <b>우측면도는 오른쪽</b>.'},
+  {h:'제1각법과 반대!', fig1:true,
+    p:'유럽에서 쓰는 <b>제1각법</b>은 배치가 반대예요 — 평면도가 <b>아래</b>, 우측면도가 <b>왼쪽</b>. 헷갈리기 쉬우니 "제3각법 = 본 방향 그대로"로 기억하세요.'},
+  {h:'3면도 읽는 요령', p:'• <b>세로 길이</b>는 정면도·우측면도가 같아요.<br>• <b>가로 길이</b>는 정면도·평면도가 같아요.<br>• 원기둥을 세우면 정면=사각형, 위=원! 헷갈리지 마세요.<br>• 안 보이는 모서리는 <b>숨은선(파선)</b>으로 그려요.'},
+];
+function renderLearn(){
+  const box = document.getElementById('learn-body');
+  box.innerHTML = LEARN.map(c=>{
+    let fig='';
+    if(c.figs) fig = `<div class="learn-figs">`+c.figs.map(([k,nm])=>`<div class="learn-fig">${projFig(k)}<div class="cap">${nm}</div></div>`).join('')+`</div>`;
+    if(c.fig3) fig = `<div class="learn-figs"><div class="learn-fig" style="max-width:220px">${layout3rd()}<div class="cap">제3각법 배치</div></div></div>`;
+    if(c.fig1) fig = `<div class="learn-figs"><div class="learn-fig" style="max-width:220px">${layout1st()}<div class="cap">제1각법(참고)</div></div></div>`;
+    return `<div class="learn-card"><h3>${c.h}</h3>${fig}<p>${c.p}</p></div>`;
+  }).join('');
+}
+
+/* ============ 문제 생성 ============ */
+const PROJ_TYPES = [
+  {k:'ortho',  name:'정투상법'},
+  {k:'iso',    name:'등각투상법'},
+  {k:'oblique',name:'사투상법'},
+  {k:'persp',  name:'투시투상법'},
+];
+const PROJ_DESC = {
+  ortho:'정투상법 — 각 방향에서 수직으로 본 모습을 따로 그려요(기계 도면용 3면도).',
+  iso:'등각투상법 — 세 축이 120°로 벌어져 세 면을 한 그림에 나타내요.',
+  oblique:'사투상법 — 정면은 실제 모양 그대로, 옆면만 비스듬히 그려요.',
+  persp:'투시투상법 — 멀리 있는 것이 작아 보이는 원근(소실점)으로 그려요.',
+};
+function buildM1(){
+  return shuffle(PROJ_TYPES).concat(shuffle(PROJ_TYPES)).slice(0,8).map(t=>{
+    const others = shuffle(PROJ_TYPES.filter(x=>x.k!==t.k)).slice(0,3);
+    const choices = shuffle([t, ...others]).map(x=>({t:x.name, ok:x.k===t.k}));
+    return { prompt:'이 그림은 어떤 투상법으로 그린 걸까요?', stage:projFig(t.k), choices, ex:PROJ_DESC[t.k] };
+  });
+}
+function buildM2(){
+  const qs=[];
+  // A타입: 제3각법 배치에서 강조된 위치의 이름
+  const pos=[['top','평면도'],['front','정면도'],['side','우측면도']];
+  shuffle(pos).forEach(([k,nm])=>{
+    const opts=['정면도','평면도','우측면도','저면도'];
+    qs.push({ prompt:'제3각법 배치예요. 주황색으로 강조된 자리의 투상도 이름은?', stage:layout3rd(k),
+      choices:shuffle(opts.map(o=>({t:o, ok:o===nm}))), ex:`제3각법은 본 방향 그대로 배치 — 위=평면도, 가운데=정면도, 오른쪽=우측면도.` });
+  });
+  // B타입: 배치 규칙 O/X 지식
+  qs.push({ prompt:'제3각법에서 "평면도"는 정면도의 어디에 배치할까요?', choices:shuffle([{t:'위',ok:true},{t:'아래',ok:false},{t:'왼쪽',ok:false},{t:'오른쪽',ok:false}]), ex:'제3각법은 위에서 본 평면도를 정면도 위에 둬요. (제1각법은 아래)' });
+  qs.push({ prompt:'제3각법에서 "우측면도"는 정면도의 어디에 배치할까요?', choices:shuffle([{t:'오른쪽',ok:true},{t:'왼쪽',ok:false},{t:'위',ok:false},{t:'아래',ok:false}]), ex:'오른쪽에서 본 그림이니 오른쪽에 그대로 배치해요.' });
+  qs.push({ prompt:'우리나라(KS) 기계 도면에서 주로 쓰는 투상법은?', choices:shuffle([{t:'제3각법',ok:true},{t:'제1각법',ok:false},{t:'등각법',ok:false},{t:'투시법',ok:false}]), ex:'KS·미국은 제3각법, 유럽은 제1각법을 써요.' });
+  qs.push({ prompt:'제1각법의 평면도 위치는?', choices:shuffle([{t:'아래',ok:true},{t:'위',ok:false},{t:'왼쪽',ok:false},{t:'오른쪽',ok:false}]), ex:'제1각법은 제3각법과 반대 — 평면도 아래, 우측면도 왼쪽.' });
+  return shuffle(qs).slice(0,8);
+}
+function buildM3(){
+  const qs=[];
+  const askable=[]; SOLIDS.forEach(s=>{ ['front','top','side'].forEach(v=> askable.push([s,v])); });
+  shuffle(askable).slice(0,8).forEach(([s,v])=>{
+    const correctSig = VIEW[s[v]].sig;
+    const pool = Object.keys(VIEW).filter(k=>VIEW[k].sig!==correctSig);
+    const distract = shuffle(pool).slice(0,3).map(k=>({svg:svgWrap(VIEW[k].svg), ok:false}));
+    const choices = shuffle([{svg:svgWrap(VIEW[s[v]].svg), ok:true}, ...distract]);
+    qs.push({ prompt:`아래 입체(<b>${s.name}</b>)를 <b>${VIEWNAME[v]}</b> 방향에서 본 투상도는?`, stage:svgWrap(s.iso), choices, ex:`${s.name}의 ${VIEWNAME[v]}는 그림과 같아요. 방향마다 보이는 모양이 달라져요.` });
+  });
+  return qs;
+}
+function buildExam(){
+  return shuffle([...buildM1().slice(0,4), ...buildM2().slice(0,4), ...buildM3().slice(0,4)]);
+}
+const MODE_META = {
+  m1:{title:'투상법 종류 판별', build:buildM1, tool:'투상도 마스터'},
+  m2:{title:'3면도 배치·이름', build:buildM2, tool:'투상도 마스터'},
+  m3:{title:'입체 → 투상도 찾기', build:buildM3, tool:'투상도 마스터'},
+  exam:{title:'종합 점검', build:buildExam, tool:'투상도 마스터'},
+};
+
+/* ============ 화면/엔진 ============ */
+const S = { mode:null, qs:[], idx:0, score:0, answered:false, pending:null, start:0 };
+function showScreen(id){
+  ['screen-hub','screen-learn','screen-quiz','screen-result'].forEach(s=> document.getElementById(s).classList.toggle('hidden', s!==id));
+  window.scrollTo(0,0);
+}
+function goHub(){ showScreen('screen-hub'); }
+function openLearn(){ renderLearn(); showScreen('screen-learn'); }
+let hudInit=false;
+function openMode(mode){
+  S.mode=mode; S.qs=MODE_META[mode].build(); S.idx=0; S.score=0; S.start=Date.now();
+  if(window.FX){ FX.reset(); if(!hudInit){ FX.hud(document.getElementById('fx-hud')); hudInit=true; } }
+  showScreen('screen-quiz');
+  renderQ();
+}
+function renderQ(){
+  S.answered=false; S.pending=null;
+  const q=S.qs[S.idx];
+  document.getElementById('q-progress').textContent = `문제 ${S.idx+1} / ${S.qs.length}`;
+  document.getElementById('q-score').textContent = `점수 ${S.score}`;
+  const fb=document.getElementById('q-feedback'); fb.className='feedback'; fb.textContent='';
+  document.getElementById('q-submit').disabled=true;
+  document.getElementById('q-next').disabled=true;
+  document.getElementById('q-prompt').innerHTML = q.prompt;
+  document.getElementById('q-stage').innerHTML = q.stage ? `<div class="stagebox">${q.stage}</div>` : '';
+  const box=document.getElementById('q-choices'); box.innerHTML='';
+  q.choices.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='choice-btn'+(c.svg?' hasimg':'');
+    b.innerHTML = c.svg || c.t;
+    b.onclick=()=>{
+      if(S.answered) return;
+      [...box.children].forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected'); S.pending={c,b};
+      document.getElementById('q-submit').disabled=false;
+    };
+    box.appendChild(b);
+  });
+}
+function submitQ(){
+  if(S.answered || !S.pending) return;
+  S.answered=true;
+  const {c,b}=S.pending;
+  const box=document.getElementById('q-choices');
+  b.classList.remove('selected');
+  [...box.children].forEach(x=>x.disabled=true);
+  document.getElementById('q-submit').disabled=true;
+  const q=S.qs[S.idx];
+  const fb=document.getElementById('q-feedback');
+  if(c.ok){
+    S.score++; b.classList.add('correct'); fxRight(b);
+    fb.className='feedback show ok'; fb.textContent = `✅ 정답! ${q.ex}`;
+  } else {
+    b.classList.add('wrong'); fxWrong(b);
+    [...box.children].forEach((x,i)=>{ if(q.choices[i].ok) x.classList.add('correct'); });
+    fb.className='feedback show bad'; fb.textContent = `아쉬워요. ${q.ex}`;
+  }
+  document.getElementById('q-score').textContent = `점수 ${S.score}`;
+  document.getElementById('q-next').disabled=false;
+}
+function nextQ(){
+  S.idx++;
+  if(S.idx>=S.qs.length){ showResult(); return; }
+  renderQ();
+}
+function showResult(){
+  const total=S.qs.length, correct=S.score, miss=total-correct;
+  S.last={correct, total};
+  const title = MODE_META[S.mode].title;
+  document.getElementById('r-text').innerHTML = `<b>${title}</b> 완료!<br>${total}문제 중 <b>${correct}개</b> 맞혔어요.`;
+  document.getElementById('r-collect').style.display = rcEndpoint() ? 'inline-block' : 'none';
+  const retry=document.getElementById('r-retry');
+  const nb=retry.cloneNode(true); retry.parentNode.replaceChild(nb, retry);
+  nb.addEventListener('click', ()=> openMode(S.mode));
+  showScreen('screen-result');
+  fxBanner({ icon: S.mode==='exam'?'🏁':'📐', title:(miss===0?'완벽해요!':'수고했어요!'), sub:`점수 ${correct} / ${total}`, stars:fxStars(miss), btn:'좋았어! →' });
+}
+function submitResult(){
+  const rc=window.ResultCollector;
+  if(!rc){ alert('결과 제출 위젯을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+  rc.config.tool = MODE_META[S.mode].tool;
+  rc.open({ score: S.last.total?Math.round(S.last.correct/S.last.total*100):0, correct:S.last.correct, total:S.last.total, durationSec: S.start?Math.round((Date.now()-S.start)/1000):undefined });
+}
+</script>
+</body>
+</html>
