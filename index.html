@@ -127,6 +127,19 @@
     font-size:clamp(.95rem,1.7vw,1.15rem);cursor:pointer;}
   .lesson-nav button.main{flex:1.3;background:var(--accent);color:#1a1306;border-color:var(--accent);}
   .lesson-nav button.rev{background:rgba(255,180,84,.16);border-color:var(--accent);color:var(--accent);}
+  /* 표지·소제목·빈칸 */
+  .lesson-cover{text-align:center;}
+  .lesson-note{color:var(--text-dim);font-size:clamp(.9rem,1.6vw,1.2rem);margin-top:10px;}
+  .lesson-sub{font-size:clamp(1rem,2vw,1.45rem);font-weight:800;color:var(--accent);text-align:center;
+    border-left:5px solid var(--accent);padding-left:12px;align-self:flex-start;max-width:min(1000px,92vw);}
+  .lesson-hintbar{background:rgba(95,216,111,.12);border:1px solid var(--correct);color:#c9f5d2;border-radius:12px;
+    padding:10px 16px;font-size:clamp(.85rem,1.5vw,1.1rem);font-weight:700;text-align:center;max-width:min(1000px,92vw);}
+  .blk{display:inline-block;min-width:64px;text-align:center;background:var(--accent);color:#1a1306;
+    border-radius:8px;padding:1px 12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(255,180,84,.35);}
+  .blk.on{background:transparent;color:var(--accent);box-shadow:none;cursor:default;min-width:0;padding:0 2px;}
+  /* 그림만 있는 슬라이드는 크게 */
+  .lesson-figs.solo .lesson-fig svg{width:min(52vh,86vw);max-width:560px;}
+  @media (max-width:640px){ .lesson-figs.solo .lesson-fig svg{width:100%;max-width:330px;} }
   .lesson-nav button:disabled{opacity:.35;}
   .lesson-nav button:active{transform:translateY(1px);}
   @media (max-width:640px){
@@ -388,6 +401,45 @@ function renderLearn(){
 }
 
 /* ============ 수업 모드(칠판·프로젝터용 슬라이드) ============ */
+/* ── 수업용 추가 그림 ── */
+function figAlign(){ // 3면도의 높이·너비가 서로 맞는다
+  return svgWrap(
+    `<rect class="ln ln-outline" x="40" y="14" width="34" height="22"/>
+     <text class="lbl" x="57" y="10" text-anchor="middle" font-size="9">평면도</text>
+     <rect class="ln ln-outline" x="40" y="46" width="34" height="30"/>
+     <text class="lbl" x="57" y="88" text-anchor="middle" font-size="9">정면도</text>
+     <rect class="ln ln-outline" x="86" y="46" width="24" height="30"/>
+     <text class="lbl" x="98" y="88" text-anchor="middle" font-size="9">우측면도</text>
+     <line class="ln ln-thin" x1="40" y1="8" x2="40" y2="80" stroke-dasharray="3,3"/>
+     <line class="ln ln-thin" x1="74" y1="8" x2="74" y2="80" stroke-dasharray="3,3"/>
+     <line class="ln ln-thin" x1="34" y1="46" x2="116" y2="46" stroke-dasharray="3,3"/>
+     <line class="ln ln-thin" x1="34" y1="76" x2="116" y2="76" stroke-dasharray="3,3"/>
+     <text class="lbl hl" x="57" y="42" text-anchor="middle" font-size="9">너비 같음</text>
+     <text class="lbl hl" x="98" y="40" text-anchor="middle" font-size="9">높이 같음</text>`, '0 0 120 96');
+}
+function figGlassBox(){ // 유리상자에 넣고 펼치는 제3각법 원리
+  return svgWrap(
+    `<rect class="ln ln-thin" x="14" y="16" width="92" height="70" stroke-dasharray="4,3"/>
+     <path class="face-t" d="M46 44 l14 -9 l14 9 l-14 9 z"/>
+     <path class="face-f" d="M46 44 v18 l14 9 v-18 z"/>
+     <path class="face-s" d="M74 44 v18 l-14 9 v-18 z"/>
+     <polygon class="arrowm" points="60,24 55,32 65,32" fill="var(--accent)"/>
+     <polygon class="arrowm" points="98,51 90,46 90,56" fill="var(--accent)"/>
+     <polygon class="arrowm" points="60,80 55,72 65,72" fill="var(--accent)"/>
+     <text class="lbl hl" x="60" y="14" text-anchor="middle" font-size="9">위에서</text>
+     <text class="lbl hl" x="104" y="42" text-anchor="end" font-size="9">오른쪽에서</text>
+     <text class="lbl hl" x="60" y="94" text-anchor="middle" font-size="9">앞에서</text>`, '0 0 120 100');
+}
+function figTusangSummary(){ // 정리용 미니 요약
+  const mini=(inner,x,label)=>`<g transform="translate(${x},4) scale(0.42)">${inner}</g>
+    <text class="lbl" x="${x+25}" y="60" text-anchor="middle" font-size="8">${label}</text>`;
+  return svgWrap(
+    mini(`<rect class="ln ln-thin" x="18" y="18" width="30" height="24"/><rect class="ln ln-outline" x="18" y="50" width="30" height="30"/><rect class="ln ln-thin" x="56" y="50" width="24" height="30"/>`,4,'정투상')+
+    mini(`<path class="face-t" d="M40 34 l20 -12 l20 12 l-20 12 z"/><path class="face-f" d="M40 34 v28 l20 12 v-28 z"/><path class="face-s" d="M80 34 v28 l-20 12 v-28 z"/>`,60,'등각')+
+    mini(`<rect class="face-f" x="30" y="44" width="34" height="34"/><path class="face-t" d="M30 44 l18 -14 h34 l-18 14 z"/><path class="face-s" d="M64 44 l18 -14 v34 l-18 14 z"/>`,116,'사투상')+
+    mini(`<rect class="face-f" x="26" y="46" width="34" height="30"/><path class="ln ln-thin" d="M26 46 L96 30 M60 46 L96 30 M26 76 L96 30"/>`,172,'투시'),
+    '0 0 226 68');
+}
 const LESSON = [
   { t:'투상도란 무엇일까?', figs:[[projFig('ortho'),'정투상 3면도']],
     pts:['우리가 만드는 물건은 <b>3차원</b>인데, 도면 종이는 <b>2차원</b>이에요.',
@@ -403,6 +455,10 @@ const LESSON = [
          '<b>투시투상법</b>: 멀수록 작아지는 <b>원근</b>(소실점). 건축 조감도·그림에 써요.',
          '→ 투시투상은 실제 치수와 달라져서 <b>기계 도면에는 쓰지 않아요</b>.'],
     ask:'왜 투시투상으로는 부품을 만들 수 없을까요?' },
+  { t:'물체를 상자에 넣고 펼친다', figs:[[figGlassBox(),'세 방향에서 본다']],
+    pts:['물체를 <b>투명한 상자</b> 안에 넣었다고 생각해요.',
+         '<b>앞·위·오른쪽</b>에서 본 모습을 각 면에 그린 뒤 상자를 <b>펼치면</b> 3면도가 돼요.'],
+    ask:'상자를 펼치면 위에서 본 그림은 어디로 갈까요?' },
   { t:'우리가 쓰는 건 제3각법', figs:[[layout3rd(),'제3각법 배치']],
     pts:['한국(KS)·미국 도면은 <b>제3각법</b>을 써요.',
          '<b>정면도</b>를 가운데 두고 <b>본 방향 그대로</b> 배치해요.',
@@ -413,7 +469,7 @@ const LESSON = [
          '평면도가 <b>아래</b>, 우측면도가 <b>왼쪽</b>에 와요.',
          '외우는 법: <b>제3각법 = 본 방향 그대로</b>, 제1각법 = 반대!'],
     ask:'도면을 받았을 때 제1각법인지 제3각법인지 어떻게 알 수 있을까요?' },
-  { t:'3면도 읽는 요령', figs:[[layout3rd('front'),'정면도 기준']],
+  { t:'3면도 읽는 요령', figs:[[figAlign(),'너비·높이가 서로 맞음']],
     pts:['<b>세로 길이(높이)</b>는 정면도와 우측면도가 <b>같아요</b>.',
          '<b>가로 길이(너비)</b>는 정면도와 평면도가 <b>같아요</b>.',
          '그래서 세 그림은 <b>선을 맞춰</b> 나란히 그려요.'],
@@ -437,19 +493,60 @@ const LESSON = [
   { q:'우리나라(KS) 기계 도면에서 주로 쓰는 투상법은?',
     choices:['제1각법','제3각법','등각법','투시법'], answer:1,
     ex:'KS·미국은 <b>제3각법</b>, 유럽은 제1각법을 씁니다.' },
-  { t:'오늘 정리', pts:['투상도 = 3D 물체를 <b>여러 방향에서 본</b> 2D 그림',
+  { t:'오늘 정리', figs:[[figTusangSummary(),'투상법 4가지']],
+    pts:['투상도 = 3D 물체를 <b>여러 방향에서 본</b> 2D 그림',
          '투상법 4가지: <b>정투상 · 등각 · 사투상 · 투시</b> (도면은 정투상)',
          '<b>제3각법</b> = 본 방향 그대로 (평면도 위 · 우측면도 오른쪽)',
          '높이는 정면도=우측면도, 너비는 정면도=평면도',
          '안 보이는 모서리는 <b>숨은선(파선)</b>'],
     ask:'이제 직접 풀어볼까요? (닫기 → 모드 1~3 또는 종합 점검)' },
 ];
-let lsIdx=0, lsShown=false, lsKeyHandler=null;
+/* ── 개념을 슬라이드 단위로 자동 분할 (자동화설비 CBT 이론학습 방식) ── */
+const SLIDE_ITEMS=2, SLIDE_CHARS=160, CHIP_PER=8;
+function lsPlain(x){ return String(x).replace(/<[^>]+>/g,''); }
+function lsChunk(items,maxN,maxC){
+  const out=[]; let cur=[], len=0;
+  items.forEach(it=>{
+    const L=lsPlain(it).length;
+    if(cur.length && (cur.length>=maxN || len+L>maxC)){ out.push(cur); cur=[]; len=0; }
+    cur.push(it); len+=L;
+  });
+  if(cur.length) out.push(cur);
+  return out;
+}
+function buildDeck(){
+  const out=[];
+  LESSON.forEach(tp=>{
+    if(tp.q){ out.push({kind:'quiz', q:tp.q, choices:tp.choices, answer:tp.answer, ex:tp.ex}); return; }
+    out.push({kind:'cover', title:tp.t});
+    (tp.figs||[]).forEach(([svg,cap])=> out.push({kind:'fig', title:tp.t, svg, cap}));
+    if(tp.chips) lsChunk((window.LESSON_CHIPS||[]), CHIP_PER, 999).forEach((p,i,a)=> out.push({kind:'chips', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
+    if(tp.pts) lsChunk(tp.pts, SLIDE_ITEMS, SLIDE_CHARS).forEach((p,i,a)=> out.push({kind:'list', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
+    if(tp.ask) out.push({kind:'ask', title:tp.t, text:tp.ask});
+  });
+  return out;
+}
+let DECK=[], lsIdx=0, lsShown=false, lsKeyHandler=null, lsBlank=false, BLANKS=[];
+/* <b>핵심어</b>를 빈칸(?)으로 바꿔 학생에게 묻고, 눌러서 정답 공개 */
+function lsBlankify(html){
+  return String(html).replace(/<b>([\s\S]*?)<\/b>/g,(m,inner)=>{
+    const i=BLANKS.push(inner)-1;
+    return `<span class="blk" id="blk${i}" onclick="lsRevealBlank(${i})">?</span>`;
+  });
+}
+function lsRevealBlank(i){
+  const el=document.getElementById('blk'+i);
+  if(!el || el.classList.contains('on')) return;
+  el.innerHTML=BLANKS[i]; el.classList.add('on');
+}
+function lsRevealAllBlanks(){ BLANKS.forEach((v,i)=>lsRevealBlank(i)); }
+function lsToggleBlank(){ lsBlank=!lsBlank; lsRender(); }
 function openLesson(){
+  DECK=buildDeck();
   lsIdx=0;
   document.getElementById('screen-lesson').classList.remove('hidden');
   if(!lsKeyHandler){
-    lsKeyHandler=(e)=>{
+    lsKeyHandler = (e)=>{
       if(document.getElementById('screen-lesson').classList.contains('hidden')) return;
       const k=e.key;
       if(k==='ArrowRight'||k===' '||k==='PageDown'){ e.preventDefault(); lsNext(); }
@@ -460,6 +557,7 @@ function openLesson(){
     };
     document.addEventListener('keydown', lsKeyHandler);
   }
+  // 휴대폰: 좌우 스와이프로 넘기기
   const body=document.getElementById('ls-body');
   if(!body.dataset.swipe){
     body.dataset.swipe='1';
@@ -468,7 +566,7 @@ function openLesson(){
     body.addEventListener('touchend', e=>{
       if(x0===null) return;
       const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0;
-      if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){ dx<0?lsNext():lsPrev(); }
+      if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)*1.5){ dx<0 ? lsNext() : lsPrev(); }
       x0=null;
     }, {passive:true});
   }
@@ -482,43 +580,69 @@ function lsFull(){
   if(document.fullscreenElement){ if(document.exitFullscreen) document.exitFullscreen().catch(()=>{}); }
   else if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
 }
-function lsNext(){ if(lsIdx<LESSON.length-1){ lsIdx++; lsRender(); } }
+function lsNext(){ if(lsIdx<DECK.length-1){ lsIdx++; lsRender(); } }
 function lsPrev(){ if(lsIdx>0){ lsIdx--; lsRender(); } }
-function lsReveal(){ lsShown=true; lsPaintReveal(); }
+function lsReveal(){
+  const s=DECK[lsIdx];
+  if(s.kind==='quiz'){ lsShown=true; lsPaintReveal(); return; }
+  if(!lsBlank){ lsBlank=true; lsRender(); return; }              // 빈칸 켜기
+  const left=BLANKS.some((v,i)=>{ const el=document.getElementById('blk'+i); return el && !el.classList.contains('on'); });
+  if(left){ lsRevealAllBlanks(); return; }                        // 남은 빈칸 모두 열기
+  lsBlank=false; lsRender();                                      // 다 열었으면 빈칸 끄기
+}
 function lsPaintReveal(){
-  const s=LESSON[lsIdx];
+  const s=DECK[lsIdx];
   const ask=document.getElementById('ls-ask'), ex=document.getElementById('ls-ex');
-  if(ask) ask.style.visibility = lsShown?'visible':'hidden';
-  if(s.q && lsShown){
+  if(ask) ask.style.visibility = lsShown ? 'visible' : 'hidden';
+  if(s.kind==='quiz' && lsShown){
     document.querySelectorAll('#ls-body .lq div').forEach((d,i)=>{ if(i===s.answer) d.classList.add('on'); });
     if(ex) ex.style.visibility='visible';
   }
 }
 function lsRender(){
-  lsShown=false;
-  const s=LESSON[lsIdx];
-  document.getElementById('ls-step').textContent = `슬라이드 ${lsIdx+1} / ${LESSON.length}`;
-  document.getElementById('ls-bar').style.width = ((lsIdx+1)/LESSON.length*100)+'%';
-  const rev=document.getElementById('ls-reveal');
-  rev.textContent = s.q ? '정답 보기' : '발문 보기';
-  rev.disabled = !(s.q || s.ask);
+  lsShown=false; BLANKS=[];
+  const s=DECK[lsIdx];
+  document.getElementById('ls-step').textContent = `슬라이드 ${lsIdx+1} / ${DECK.length}`;
+  document.getElementById('ls-bar').style.width = ((lsIdx+1)/DECK.length*100)+'%';
   document.getElementById('ls-prev').disabled = (lsIdx===0);
   const nx=document.getElementById('ls-next');
-  nx.disabled = (lsIdx===LESSON.length-1);
-  nx.textContent = (lsIdx===LESSON.length-1)?'끝':'다음 →';
+  nx.disabled = (lsIdx===DECK.length-1);
+  nx.textContent = (lsIdx===DECK.length-1) ? '끝' : '다음 →';
+
   let html='';
-  if(s.q){
+  const wrap = (inner)=> (lsBlank ? lsBlankify(inner) : inner);
+  if(s.kind==='quiz'){
     html += `<div class="lesson-title">${s.q}</div>`;
     html += `<div class="lq">`+s.choices.map(c=>`<div>${c}</div>`).join('')+`</div>`;
     html += `<div class="lesson-ex" id="ls-ex" style="visibility:hidden">${s.ex}</div>`;
-  } else {
-    html += `<div class="lesson-title">${s.t}</div>`;
-    if(s.figs) html += `<div class="lesson-figs">`+s.figs.map(([svg,cap])=>`<div class="lesson-fig">${svg}${cap?`<div class="cap">${cap}</div>`:''}</div>`).join('')+`</div>`;
-    if(s.pts) html += `<ul class="lesson-points">`+s.pts.map(p=>`<li>${p}</li>`).join('')+`</ul>`;
-    if(s.ask) html += `<div class="lesson-ask" id="ls-ask" style="visibility:hidden"><small>함께 생각해보기</small>${s.ask}</div>`;
+  } else if(s.kind==='cover'){
+    html += `<div class="lesson-cover"><div class="lesson-title">${s.title}</div>
+             <div class="lesson-note">이 내용을 함께 알아봅시다</div></div>`;
+  } else if(s.kind==='fig'){
+    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += `<div class="lesson-figs solo"><div class="lesson-fig">${s.svg}${s.cap?`<div class="cap">${s.cap}</div>`:''}</div></div>`;
+  } else if(s.kind==='chips'){
+    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += `<div class="lesson-chips">`+s.items.map(n=>`<span class="chip no">🚫 ${n}</span>`).join('')+`</div>`;
+  } else if(s.kind==='list'){
+    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += wrap(`<ul class="lesson-points">`+s.items.map(p=>`<li>${p}</li>`).join('')+`</ul>`);
+  } else if(s.kind==='ask'){
+    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += `<div class="lesson-ask" id="ls-ask" style="visibility:visible"><small>함께 생각해보기</small>${s.text}</div>`;
   }
-  document.getElementById('ls-body').innerHTML = html;
-  document.getElementById('ls-body').scrollTop = 0;
+  if(lsBlank && BLANKS.length) html = `<div class="lesson-hintbar">🙋 빈칸을 학생에게 물어보고, <b>빈칸을 눌러</b> 정답을 확인하세요.</div>` + html;
+
+  const body=document.getElementById('ls-body');
+  body.innerHTML = html;
+  body.scrollTop = 0;
+
+  const rev=document.getElementById('ls-reveal');
+  const blankable = (s.kind==='list');
+  if(s.kind==='quiz'){ rev.textContent='정답 보기'; rev.disabled=false; }
+  else if(!blankable){ rev.textContent='🙈 빈칸'; rev.disabled=true; }
+  else if(!lsBlank){ rev.textContent='🙈 빈칸 켜기'; rev.disabled=false; }
+  else { rev.textContent='정답 열기'; rev.disabled=false; }
 }
 
 /* ============ 문제 생성 ============ */
