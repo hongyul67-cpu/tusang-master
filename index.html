@@ -157,7 +157,7 @@
 </head>
 <body>
 <!-- 결과 수집(교사가 ?rc= 링크로 자기 구글시트 연결) -->
-<script src="https://hongyul67-cpu.github.io/links/collector.js" data-tool="투상도 마스터"></script>
+<script src="https://hongyul67-cpu.github.io/links/collector.js?v=20260815" data-tool="투상도 마스터"></script>
 <script src="https://hongyul67-cpu.github.io/links/class-mode.js"></script>
 <!-- 연출(파티클·펀치·흔들림·클리어 배너·소리토글) -->
 <script src="https://hongyul67-cpu.github.io/links/fx.js"></script>
@@ -737,6 +737,7 @@ function openLearn(){ renderLearn(); showScreen('screen-learn'); }
 let hudInit=false;
 function openMode(mode){
   S.mode=mode; S.qs=MODE_META[mode].build(); S.idx=0; S.score=0; S.start=Date.now();
+  bumpTry(mode);
   if(window.FX){ FX.reset(); if(!hudInit){ FX.hud(document.getElementById('fx-hud')); hudInit=true; } }
   showScreen('screen-quiz');
   renderQ();
@@ -811,11 +812,32 @@ function showResult(){
   else fxBanner({ icon: S.mode==='exam'?'🏁':'📐', title:(miss===0?'완벽해요!':'수고했어요!'), sub:`점수 ${correct} / ${total}`+(rk?` · ${rk.gain>=0?'+':''}${rk.gain} RP`:''), stars:fxStars(miss), btn:'좋았어! →' });
 }
 paintRank();
+/* 모드별 도전 횟수(생기부 키워드용) */
+function bumpTry(mode){
+  const K='try_투상도';
+  let d={}; try{ d=JSON.parse(localStorage.getItem(K))||{}; }catch(e){}
+  d[mode]=(d[mode]||0)+1;
+  try{ localStorage.setItem(K, JSON.stringify(d)); }catch(e){}
+  return d[mode];
+}
+function getTry(mode){
+  const K='try_투상도';
+  let d={}; try{ d=JSON.parse(localStorage.getItem(K))||{}; }catch(e){}
+  return d[mode]||1;
+}
 function submitResult(){
   const rc=window.ResultCollector;
   if(!rc){ alert('결과 제출 위젯을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
   rc.config.tool = MODE_META[S.mode].tool;
-  rc.open({ score: S.last.total?Math.round(S.last.correct/S.last.total*100):0, correct:S.last.correct, total:S.last.total, durationSec: S.start?Math.round((Date.now()-S.start)/1000):undefined });
+  rc.open({
+    score: S.last.total?Math.round(S.last.correct/S.last.total*100):0,
+    correct:S.last.correct, total:S.last.total,
+    durationSec: S.start?Math.round((Date.now()-S.start)/1000):undefined,
+    mode: '투상도 — ' + MODE_META[S.mode].title,
+    retry: getTry(S.mode),
+    tier: window.Rank ? Rank.get().tier.full : undefined,
+    extra: ['공간지각력', '제3각법 이해']
+  });
 }
 </script>
 </body>
