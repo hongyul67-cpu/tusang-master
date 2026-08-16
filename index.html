@@ -161,6 +161,8 @@
 <script src="https://hongyul67-cpu.github.io/links/class-mode.js"></script>
 <!-- 연출(파티클·펀치·흔들림·클리어 배너·소리토글) -->
 <script src="https://hongyul67-cpu.github.io/links/fx.js"></script>
+<!-- 계급·랭크포인트(제도 시리즈 공용 — 도면읽기·투상도·단면도 RP가 합산됨) -->
+<script src="https://hongyul67-cpu.github.io/links/rank.js" data-tool="제도 마스터"></script>
 
 <div class="wrap">
 
@@ -169,6 +171,17 @@
     <div class="top-eyebrow">자동설비 기능사 · 도면읽기 시리즈</div>
     <h1>📐 투상도 마스터</h1>
     <div class="subtitle">3D 물체를 정면·평면·측면에서 본 그림(투상도)으로 읽는 연습이에요. 배우고 → 풀고 → 제출까지.</div>
+    <div class="panel" id="rank-panel" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+        <div style="font-size:0.95rem;font-weight:700">🏅 내 계급 · 랭크 포인트</div>
+        <button class="btn secondary" style="min-height:auto;padding:7px 12px;font-size:0.8rem" onclick="rankReset()">초기화</button>
+      </div>
+      <div id="rank-card"></div>
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-top:8px">
+        문제를 풀 때마다 점수에 따라 RP가 오르내려요. 도면읽기·투상도·단면도 <b>세 도구 점수가 합쳐집니다</b>.
+      </div>
+    </div>
+
     <div class="panel">
       <div class="mode-grid">
         <div class="mode-card" onclick="openLesson()" style="border-color:var(--accent)">
@@ -255,6 +268,7 @@
   <!-- ================= 결과 ================= -->
   <div id="screen-result" class="panel hidden">
     <div class="prompt" id="r-text" style="font-size:1.2rem;text-align:center;"></div>
+    <div id="r-rank" style="margin:12px 0;"></div>
     <div class="nextrow" style="justify-content:center;">
       <button class="btn" id="r-collect" onclick="submitResult()" style="display:none;">🧑‍🏫 선생님께 결과 제출</button>
     </div>
@@ -709,7 +723,16 @@ function showScreen(id){
   ['screen-hub','screen-learn','screen-quiz','screen-result'].forEach(s=> document.getElementById(s).classList.toggle('hidden', s!==id));
   window.scrollTo(0,0);
 }
-function goHub(){ showScreen('screen-hub'); }
+function paintRank(){
+  if(!window.Rank) return;
+  const p=document.getElementById('rank-panel');
+  if(p){ p.style.display='block'; document.getElementById('rank-card').innerHTML=Rank.card(); }
+}
+function rankReset(){
+  if(!window.Rank) return;
+  if(confirm('계급과 RP를 모두 초기화할까요?')){ Rank.reset(); paintRank(); }
+}
+function goHub(){ showScreen('screen-hub'); paintRank(); }
 function openLearn(){ renderLearn(); showScreen('screen-learn'); }
 let hudInit=false;
 function openMode(mode){
@@ -777,9 +800,17 @@ function showResult(){
   const retry=document.getElementById('r-retry');
   const nb=retry.cloneNode(true); retry.parentNode.replaceChild(nb, retry);
   nb.addEventListener('click', ()=> openMode(S.mode));
+  // 랭크 포인트 정산
+  let rk=null;
+  const pctScore = total ? Math.round(correct/total*100) : 0;
+  if(window.Rank) rk=Rank.award(pctScore, {mode:title});
+  const rbox=document.getElementById('r-rank');
+  if(rbox) rbox.innerHTML = rk ? Rank.resultBox(rk) : '';
   showScreen('screen-result');
-  fxBanner({ icon: S.mode==='exam'?'🏁':'📐', title:(miss===0?'완벽해요!':'수고했어요!'), sub:`점수 ${correct} / ${total}`, stars:fxStars(miss), btn:'좋았어! →' });
+  if(rk && rk.tierUp) fxBanner({ icon:rk.tierAfter.icon, title:`${rk.tierAfter.name} 승급!`, sub:`${rk.after} RP · ${rk.tierAfter.full}`, stars:3, btn:'좋았어! →' });
+  else fxBanner({ icon: S.mode==='exam'?'🏁':'📐', title:(miss===0?'완벽해요!':'수고했어요!'), sub:`점수 ${correct} / ${total}`+(rk?` · ${rk.gain>=0?'+':''}${rk.gain} RP`:''), stars:fxStars(miss), btn:'좋았어! →' });
 }
+paintRank();
 function submitResult(){
   const rc=window.ResultCollector;
   if(!rc){ alert('결과 제출 위젯을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
