@@ -716,6 +716,7 @@ const MODE_META = {
   m3:{title:'입체 → 투상도 찾기', build:buildM3, tool:'투상도 마스터'},
   exam:{title:'종합 점검', build:buildExam, tool:'투상도 마스터'},
 };
+const TOOL_NAME = '투상도 마스터';   /* 시트 탭은 하나 — 파트는 mode 로 구분 (규약 §1 ①) */
 
 /* ============ 화면/엔진 ============ */
 const S = { mode:null, qs:[], idx:0, score:0, answered:false, pending:null, start:0 };
@@ -736,7 +737,7 @@ function goHub(){ showScreen('screen-hub'); paintRank(); }
 function openLearn(){ renderLearn(); showScreen('screen-learn'); }
 let hudInit=false;
 function openMode(mode){
-  S.mode=mode; S.qs=MODE_META[mode].build(); S.idx=0; S.score=0; S.start=Date.now();
+  S.mode=mode; S.qs=MODE_META[mode].build(); S.wrong=[]; S.idx=0; S.score=0; S.start=Date.now();
   bumpTry(mode);
   if(window.FX){ FX.reset(); if(!hudInit){ FX.hud(document.getElementById('fx-hud')); hudInit=true; } }
   showScreen('screen-quiz');
@@ -782,6 +783,9 @@ function submitQ(){
   } else {
     b.classList.add('wrong'); fxWrong(b);
     [...box.children].forEach((x,i)=>{ if(q.choices[i].ok) x.classList.add('correct'); });
+    // 무엇을 틀렸는지 기록 (규약 §1 ②)
+    var _ansBtn=[...box.children].find((x,i)=>q.choices[i] && q.choices[i].ok);
+    (S.wrong=S.wrong||[]).push({no:S.idx+1, pick:rcBtnText(b), ans:rcBtnText(_ansBtn)});
     fb.className='feedback show bad'; fb.textContent = `아쉬워요. ${q.ex}`;
   }
   document.getElementById('q-score').textContent = `점수 ${S.score}`;
@@ -797,7 +801,17 @@ function showResult(){
   S.last={correct, total};
   const title = MODE_META[S.mode].title;
   document.getElementById('r-text').innerHTML = `<b>${title}</b> 완료!<br>${total}문제 중 <b>${correct}개</b> 맞혔어요.`;
-  document.getElementById('r-collect').style.display = rcEndpoint() ? 'inline-block' : 'none';
+  // 제출 버튼은 ?rc= 링크가 아니어도 항상 보인다 (규약 §1 ③)
+  document.getElementById('r-collect').style.display = 'inline-block';
+  var _hint=document.getElementById('r-rc-hint');
+  if(!_hint){
+    _hint=document.createElement('div');
+    _hint.id='r-rc-hint';
+    _hint.style.cssText='font-size:12.5px;opacity:.8;margin-top:8px;line-height:1.5';
+    document.getElementById('r-collect').parentNode.appendChild(_hint);
+  }
+  _hint.textContent = rcEndpoint() ? ''
+    : '\u203b \uc9c0\uae08 \ub9c1\ud06c\ub85c\ub294 \uc81c\ucd9c\uc774 \ub418\uc9c0 \uc54a\uc544\uc694. \uc120\uc0dd\ub2d8\uc774 \uc900 \uc81c\ucd9c\uc6a9 \ub9c1\ud06c(?rc=\u2026)\ub85c \uc5f4\uba74 \ubcf4\ub0bc \uc218 \uc788\uc5b4\uc694.';
   const retry=document.getElementById('r-retry');
   const nb=retry.cloneNode(true); retry.parentNode.replaceChild(nb, retry);
   nb.addEventListener('click', ()=> openMode(S.mode));
@@ -825,10 +839,30 @@ function getTry(mode){
   let d={}; try{ d=JSON.parse(localStorage.getItem(K))||{}; }catch(e){}
   return d[mode]||1;
 }
+/* ── 틀린 문제를 "무엇을 틀렸는지"로 남긴다 (규약 §1 ②) ──
+   보기 생김새가 문제마다 달라(그림/글자), 학생이 실제로 본 버튼 글자를 그대로 읽는다. */
+function rcBtnText(el){
+  if(!el) return '';
+  var t=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
+  if(!t){                       // 그림 보기 — alt·title·aria-label 을 찾아본다
+    var img=el.querySelector('[alt],[title],[aria-label]');
+    if(img) t=(img.getAttribute('alt')||img.getAttribute('title')||img.getAttribute('aria-label')||'').trim();
+  }
+  return t || '(그림 보기)';
+}
+function rcShort(t,n){
+  t=String(t==null?'':t).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  return t.length>n ? t.slice(0,n-1)+'\u2026' : t;
+}
+function rcWrongList(){
+  return (S.wrong||[]).map(function(w){
+    return w.no+'\ubc88 '+rcShort(w.pick,16)+'\u2192'+rcShort(w.ans,16);
+  });
+}
 function submitResult(){
   const rc=window.ResultCollector;
   if(!rc){ alert('결과 제출 위젯을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
-  rc.config.tool = MODE_META[S.mode].tool;
+  rc.config.tool = TOOL_NAME;   // 파트는 mode 로 구분한다 (탭을 갈아 끼우지 않는다)
   rc.open({
     score: S.last.total?Math.round(S.last.correct/S.last.total*100):0,
     correct:S.last.correct, total:S.last.total,
@@ -836,6 +870,7 @@ function submitResult(){
     mode: '투상도 — ' + MODE_META[S.mode].title,
     retry: getTry(S.mode),
     tier: window.Rank ? Rank.get().tier.full : undefined,
+    wrong: rcWrongList(),
     extra: ['공간지각력', '제3각법 이해']
   });
 }
