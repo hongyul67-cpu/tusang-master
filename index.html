@@ -59,6 +59,18 @@
   .feedback.show{display:block;}
   .feedback.ok{border-left-color:var(--correct);}
   .feedback.bad{border-left-color:var(--wrong);}
+  /* 오답노트 (종합 점검) — 규약 §2 */
+  .rvbox{margin:14px 0;text-align:left;}
+  .rvhead{font-weight:800;font-size:1.05rem;margin-bottom:8px;}
+  .rvcard{border:1px solid rgba(234,244,255,0.18);border-radius:12px;padding:12px;margin-bottom:10px;}
+  .rvno{font-size:0.82rem;opacity:0.75;margin-bottom:6px;}
+  .rvq{font-size:0.95rem;margin-bottom:8px;}
+  .rvrow{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:0.9rem;}
+  .rvlb{flex:0 0 44px;opacity:0.8;}
+  .rvlb.ans{font-weight:700;color:var(--correct);opacity:1;}
+  .rvv{min-width:0;}
+  .rvv svg{max-width:96px;width:96px;height:auto;vertical-align:middle;}
+  .rvex{font-size:0.9rem;line-height:1.6;opacity:0.9;margin-top:8px;}
   .nextrow{display:flex;justify-content:flex-end;margin-top:16px;gap:10px;flex-wrap:wrap;}
   .hidden{display:none !important;}
 
@@ -113,6 +125,11 @@
   .lesson-ask{background:rgba(255,180,84,.12);border:1px solid var(--accent);border-radius:14px;
               padding:14px 20px;font-size:clamp(.95rem,1.9vw,1.35rem);font-weight:700;max-width:min(950px,92vw);text-align:center;}
   .lesson-ask small{display:block;font-size:.72em;color:var(--text-dim);font-weight:700;margin-bottom:4px;}
+  .lesson-open{font-size:clamp(1.15rem,2.5vw,1.9rem);font-weight:900;color:var(--accent);
+              text-align:center;margin-bottom:10px;line-height:1.25;}
+  .lesson-open span{display:block;font-size:.46em;letter-spacing:.2em;color:var(--text-dim);
+              font-weight:700;margin-bottom:5px;}
+  .lesson-ask.tail{margin-top:16px;}
   .lq{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:min(900px,92vw);width:100%;}
   @media (max-width:640px){.lq{grid-template-columns:1fr;}}
   .lq div{background:var(--panel-light);border:2px solid rgba(234,244,255,.18);border-radius:12px;
@@ -187,7 +204,7 @@
         <div class="mode-card" onclick="openLesson()" style="border-color:var(--accent)">
           <div class="num">선생님용</div>
           <div class="title">🖥️ 수업 슬라이드 (개념 설명)</div>
-          <div class="desc">큰 글씨 슬라이드 12장 · 발문 · 즉석 퀴즈 · 좌우로 밀거나 ←/→ 키(리모컨)</div>
+          <div class="desc">큰 글씨 슬라이드 <span id="ls-count">?</span>장 · 발문 · 즉석 퀴즈 · 좌우로 밀거나 ←/→ 키(리모컨)</div>
         </div>
         <div class="mode-card" onclick="openLearn()">
           <div class="num">배우기</div>
@@ -211,7 +228,7 @@
         </div>
       </div>
       <div class="nextrow" style="justify-content:center;margin-top:16px;">
-        <button class="btn" onclick="openMode('exam')">🏁 종합 점검 (12문제)</button>
+        <button class="btn" onclick="openMode('exam')">🏁 종합 점검 (20문제 · 시험)</button>
       </div>
     </div>
   </div>
@@ -516,7 +533,9 @@ const LESSON = [
     ask:'이제 직접 풀어볼까요? (닫기 → 모드 1~3 또는 종합 점검)' },
 ];
 /* ── 개념을 슬라이드 단위로 자동 분할 (자동화설비 CBT 이론학습 방식) ── */
-const SLIDE_ITEMS=2, SLIDE_CHARS=160, CHIP_PER=8;
+/* 한 장에 담는 양 — 수업 중 넘기는 횟수를 줄이려고 항목 2개·160자에서 두 배로 늘렸다.
+   더 늘리면 뒷자리에서 글씨가 작아 보인다. */
+const SLIDE_ITEMS=4, SLIDE_CHARS=340, CHIP_PER=14;
 function lsPlain(x){ return String(x).replace(/<[^>]+>/g,''); }
 function lsChunk(items,maxN,maxC){
   const out=[]; let cur=[], len=0;
@@ -528,19 +547,26 @@ function lsChunk(items,maxN,maxC){
   if(cur.length) out.push(cur);
   return out;
 }
+/* 주제 하나가 [표지][그림][목록][질문] 넉 장으로 흩어져 수업 중 넘기는 횟수가 너무 많았다.
+   표지는 첫 장 머리글로, "함께 생각해보기"는 마지막 장 아래로 접어 넣어 장수를 줄인다. */
 function buildDeck(){
   const out=[];
   LESSON.forEach(tp=>{
     if(tp.q){ out.push({kind:'quiz', q:tp.q, choices:tp.choices, answer:tp.answer, ex:tp.ex}); return; }
-    out.push({kind:'cover', title:tp.t});
-    (tp.figs||[]).forEach(([svg,cap])=> out.push({kind:'fig', title:tp.t, svg, cap}));
-    if(tp.chips) lsChunk((window.LESSON_CHIPS||[]), CHIP_PER, 999).forEach((p,i,a)=> out.push({kind:'chips', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
-    if(tp.pts) lsChunk(tp.pts, SLIDE_ITEMS, SLIDE_CHARS).forEach((p,i,a)=> out.push({kind:'list', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
-    if(tp.ask) out.push({kind:'ask', title:tp.t, text:tp.ask});
+    const made=[];
+    (tp.figs||[]).forEach(([svg,cap])=> made.push({kind:'fig', title:tp.t, svg, cap}));
+    if(tp.chips) lsChunk((window.LESSON_CHIPS||[]), CHIP_PER, 999).forEach((p,i,a)=> made.push({kind:'chips', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
+    if(tp.pts) lsChunk(tp.pts, SLIDE_ITEMS, SLIDE_CHARS).forEach((p,i,a)=> made.push({kind:'list', title:tp.t+(a.length>1?` (${i+1}/${a.length})`:''), items:p}));
+    if(!made.length) made.push({kind:'cover', title:tp.t});   // 내용이 없는 주제만 표지를 따로 둔다
+    made[0].opening=tp.t;                                     // 첫 장이 표지를 겸한다
+    if(tp.ask) made[made.length-1].ask=tp.ask;                // 질문은 마지막 장 아래에
+    out.push(...made);
   });
   return out;
 }
 let DECK=[], lsIdx=0, lsShown=false, lsKeyHandler=null, lsBlank=false, BLANKS=[];
+/* 안내 문구의 슬라이드 장수는 덱에서 그대로 읽어온다 (손으로 적어 둔 숫자가 실제와 어긋나 있었다) */
+(function(){ try{ const n=document.getElementById('ls-count'); if(n) n.textContent=buildDeck().length; }catch(e){} })();
 /* <b>핵심어</b>를 빈칸(?)으로 바꿔 학생에게 묻고, 눌러서 정답 공개 */
 function lsBlankify(html){
   return String(html).replace(/<b>([\s\S]*?)<\/b>/g,(m,inner)=>{
@@ -625,6 +651,10 @@ function lsRender(){
 
   let html='';
   const wrap = (inner)=> (lsBlank ? lsBlankify(inner) : inner);
+  // 주제의 첫 장이면 표지를 겸한 큰 머리글을 쓴다
+  const head = (t)=> s.opening
+    ? `<div class="lesson-open"><span>새 주제</span>${t}</div>`
+    : `<div class="lesson-sub">${t}</div>`;
   if(s.kind==='quiz'){
     html += `<div class="lesson-title">${s.q}</div>`;
     html += `<div class="lq">`+s.choices.map(c=>`<div>${c}</div>`).join('')+`</div>`;
@@ -633,18 +663,19 @@ function lsRender(){
     html += `<div class="lesson-cover"><div class="lesson-title">${s.title}</div>
              <div class="lesson-note">이 내용을 함께 알아봅시다</div></div>`;
   } else if(s.kind==='fig'){
-    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += head(s.title);
     html += `<div class="lesson-figs solo"><div class="lesson-fig">${s.svg}${s.cap?`<div class="cap">${s.cap}</div>`:''}</div></div>`;
   } else if(s.kind==='chips'){
-    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += head(s.title);
     html += `<div class="lesson-chips">`+s.items.map(n=>`<span class="chip no">🚫 ${n}</span>`).join('')+`</div>`;
   } else if(s.kind==='list'){
-    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += head(s.title);
     html += wrap(`<ul class="lesson-points">`+s.items.map(p=>`<li>${p}</li>`).join('')+`</ul>`);
   } else if(s.kind==='ask'){
-    html += `<div class="lesson-sub">${s.title}</div>`;
+    html += head(s.title);
     html += `<div class="lesson-ask" id="ls-ask" style="visibility:visible"><small>함께 생각해보기</small>${s.text}</div>`;
   }
+  if(s.ask) html += `<div class="lesson-ask tail" id="ls-ask" style="visibility:visible"><small>함께 생각해보기</small>${s.ask}</div>`;
   if(lsBlank && BLANKS.length) html = `<div class="lesson-hintbar">🙋 빈칸을 학생에게 물어보고, <b>빈칸을 눌러</b> 정답을 확인하세요.</div>` + html;
 
   const body=document.getElementById('ls-body');
@@ -707,8 +738,15 @@ function buildM3(){
   });
   return qs;
 }
+/* 종합 점검은 20문항 (규약 §2) — 모드별로 고르게 뽑고, 모자라면 남은 문제로 채운다 */
 function buildExam(){
-  return shuffle([...buildM1().slice(0,4), ...buildM2().slice(0,4), ...buildM3().slice(0,4)]);
+  const packs=[buildM1(), buildM2(), buildM3()], want=[7,7,6], qs=[];
+  packs.forEach((p,i)=> qs.push(...shuffle(p).slice(0, want[i])));
+  if(qs.length<20){
+    const rest=shuffle([].concat(...packs)).filter(q=> qs.indexOf(q)<0);
+    qs.push(...rest.slice(0, 20-qs.length));
+  }
+  return shuffle(qs).slice(0,20);
 }
 const MODE_META = {
   m1:{title:'투상법 종류 판별', build:buildM1, tool:'투상도 마스터'},
@@ -737,7 +775,8 @@ function goHub(){ showScreen('screen-hub'); paintRank(); }
 function openLearn(){ renderLearn(); showScreen('screen-learn'); }
 let hudInit=false;
 function openMode(mode){
-  S.mode=mode; S.qs=MODE_META[mode].build(); S.wrong=[]; S.idx=0; S.score=0; S.start=Date.now();
+  S.mode=mode; S.qs=MODE_META[mode].build(); S.wrong=[]; S.rev=[]; S.idx=0; S.score=0; S.start=Date.now();
+  clearReview();
   bumpTry(mode);
   if(window.FX){ FX.reset(); if(!hudInit){ FX.hud(document.getElementById('fx-hud')); hudInit=true; } }
   showScreen('screen-quiz');
@@ -747,7 +786,7 @@ function renderQ(){
   S.answered=false; S.pending=null;
   const q=S.qs[S.idx];
   document.getElementById('q-progress').textContent = `문제 ${S.idx+1} / ${S.qs.length}`;
-  document.getElementById('q-score').textContent = `점수 ${S.score}`;
+  document.getElementById('q-score').textContent = isExam() ? '채점은 마지막에' : `점수 ${S.score}`;
   const fb=document.getElementById('q-feedback'); fb.className='feedback'; fb.textContent='';
   document.getElementById('q-submit').disabled=true;
   document.getElementById('q-next').disabled=true;
@@ -777,18 +816,28 @@ function submitQ(){
   document.getElementById('q-submit').disabled=true;
   const q=S.qs[S.idx];
   const fb=document.getElementById('q-feedback');
-  if(c.ok){
-    S.score++; b.classList.add('correct'); fxRight(b);
+  const ok=c.ok, ansC=q.choices.find(x=>x.ok);
+  if(ok) S.score++;
+  // 무엇을 틀렸는지 기록 — 시험이든 연습이든 남긴다 (규약 §1 ②)
+  if(!ok){
+    var _ai=q.choices.indexOf(ansC), _ansBtn=[...box.children][_ai];
+    (S.wrong=S.wrong||[]).push({no:S.idx+1, topic:rcTopic(q.prompt),
+                                pick:rcBtnText(b, q.choices.indexOf(c)), ans:rcBtnText(_ansBtn, _ai)});
+  }
+  if(isExam()){
+    // 시험 — 정답 표시·해설·효과음·점수판까지 전부 감추고 오답노트용으로만 담아 둔다 (규약 §2)
+    (S.rev=S.rev||[]).push({no:S.idx+1, prompt:q.prompt, stage:q.stage, ex:q.ex, ok:ok,
+                            pick:(c.svg||c.t||''), ans:(ansC?(ansC.svg||ansC.t||''):'')});
+    fb.className='feedback show'; fb.textContent = '제출했어요 · 채점은 마지막에 한꺼번에 합니다';
+  } else if(ok){
+    b.classList.add('correct'); fxRight(b);
     fb.className='feedback show ok'; fb.textContent = `✅ 정답! ${q.ex}`;
   } else {
     b.classList.add('wrong'); fxWrong(b);
     [...box.children].forEach((x,i)=>{ if(q.choices[i].ok) x.classList.add('correct'); });
-    // 무엇을 틀렸는지 기록 (규약 §1 ②)
-    var _ansBtn=[...box.children].find((x,i)=>q.choices[i] && q.choices[i].ok);
-    (S.wrong=S.wrong||[]).push({no:S.idx+1, pick:rcBtnText(b), ans:rcBtnText(_ansBtn)});
     fb.className='feedback show bad'; fb.textContent = `아쉬워요. ${q.ex}`;
   }
-  document.getElementById('q-score').textContent = `점수 ${S.score}`;
+  document.getElementById('q-score').textContent = isExam() ? '채점은 마지막에' : `점수 ${S.score}`;
   document.getElementById('q-next').disabled=false;
 }
 function nextQ(){
@@ -821,11 +870,42 @@ function showResult(){
   if(window.Rank) rk=Rank.award(pctScore, {mode:title});
   const rbox=document.getElementById('r-rank');
   if(rbox) rbox.innerHTML = rk ? Rank.resultBox(rk) : '';
+  if(isExam()) buildReview(); else clearReview();
   showScreen('screen-result');
   if(rk && rk.tierUp) fxBanner({ icon:rk.tierAfter.icon, title:`${rk.tierAfter.name} 승급!`, sub:`${rk.after} RP · ${rk.tierAfter.full}`, stars:3, btn:'좋았어! →' });
   else fxBanner({ icon: S.mode==='exam'?'🏁':'📐', title:(miss===0?'완벽해요!':'수고했어요!'), sub:`점수 ${correct} / ${total}`+(rk?` · ${rk.gain>=0?'+':''}${rk.gain} RP`:''), stars:fxStars(miss), btn:'좋았어! →' });
 }
 paintRank();
+/* ── 종합 점검은 시험 (규약 §2) ────────────────────────────────
+   연습(모드 ①②③)은 제출하면 곧바로 정답과 해설이 보인다.
+   종합 점검은 맞았는지 알려 주지 않고 넘어가다가, 끝나면 틀린 문제만
+   그림·지문·내 답·정답·해설과 함께 오답노트로 모아 보여준다. */
+function isExam(){ return S.mode==='exam'; }
+function clearReview(){ const o=document.getElementById('q-review'); if(o) o.remove(); }
+function buildReview(){
+  clearReview();
+  const wrongs=(S.rev||[]).filter(r=>!r.ok);
+  const box=document.createElement('div');
+  box.id='q-review'; box.className='rvbox';
+  let h='<div class="rvhead">📝 오답노트'+
+        (wrongs.length ? ' — 틀린 '+wrongs.length+'문제' : ' — 전부 맞혔습니다!')+'</div>';
+  if(!wrongs.length) h+='<div style="opacity:.85;font-size:.92rem">다시 볼 문제가 없어요.</div>';
+  wrongs.forEach(r=>{
+    h+='<div class="rvcard">'+
+       '<div class="rvno">문제 '+r.no+'</div>'+
+       (r.stage?'<div class="stagebox">'+r.stage+'</div>':'')+
+       '<div class="rvq">'+(r.prompt||'')+'</div>'+
+       '<div class="rvrow"><span class="rvlb">내 답</span><span class="rvv">'+(r.pick||'무응답')+'</span></div>'+
+       '<div class="rvrow"><span class="rvlb ans">정답</span><span class="rvv">'+(r.ans||'')+'</span></div>'+
+       (r.ex?'<div class="rvex">'+r.ex+'</div>':'')+
+       '</div>';
+  });
+  box.innerHTML=h;
+  const anchor=document.getElementById('r-text');
+  anchor.parentNode.insertBefore(box, anchor.nextSibling);
+  return box;
+}
+
 /* 모드별 도전 횟수(생기부 키워드용) */
 function bumpTry(mode){
   const K='try_투상도';
@@ -841,14 +921,22 @@ function getTry(mode){
 }
 /* ── 틀린 문제를 "무엇을 틀렸는지"로 남긴다 (규약 §1 ②) ──
    보기 생김새가 문제마다 달라(그림/글자), 학생이 실제로 본 버튼 글자를 그대로 읽는다. */
-function rcBtnText(el){
+function rcBtnText(el, idx){
   if(!el) return '';
   var t=(el.innerText||el.textContent||'').replace(/\s+/g,' ').trim();
   if(!t){                       // 그림 보기 — alt·title·aria-label 을 찾아본다
     var img=el.querySelector('[alt],[title],[aria-label]');
     if(img) t=(img.getAttribute('alt')||img.getAttribute('title')||img.getAttribute('aria-label')||'').trim();
   }
-  return t || '(그림 보기)';
+  // 글자가 전혀 없는 그림 보기는 몇 번째 보기였는지라도 남긴다
+  return t || ('보기'+('①②③④⑤⑥'[idx]||(idx!=null?(idx+1):'')));
+}
+/* 문제의 핵심어(<b>…</b>)를 뽑아 "무엇에 대한 문제였는지"를 함께 남긴다 */
+function rcTopic(html){
+  var m=String(html==null?'':html).match(/<b>[\s\S]*?<\/b>/g);
+  if(m && m.length) return m.map(function(x){ return x.replace(/<[^>]*>/g,'').trim(); })
+                            .filter(Boolean).join('\u00b7');
+  return rcShort(html, 24);
 }
 function rcShort(t,n){
   t=String(t==null?'':t).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
@@ -856,7 +944,10 @@ function rcShort(t,n){
 }
 function rcWrongList(){
   return (S.wrong||[]).map(function(w){
-    return w.no+'\ubc88 '+rcShort(w.pick,16)+'\u2192'+rcShort(w.ans,16);
+    // 보기가 그림이라 "보기①→보기②"로만 남는 문제에만 무엇을 묻는 문제였는지 덧붙인다
+    var img=/^\ubcf4\uae30/.test(w.pick)||/^\ubcf4\uae30/.test(w.ans);
+    return w.no+'\ubc88'+(img&&w.topic?' '+rcShort(w.topic,28):'')+' '+
+           rcShort(w.pick,16)+'\u2192'+rcShort(w.ans,16);
   });
 }
 function submitResult(){
