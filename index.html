@@ -446,7 +446,7 @@ function figAlign(){ // 3면도의 높이·너비가 서로 맞는다
      <line class="ln ln-thin" x1="34" y1="46" x2="116" y2="46" stroke-dasharray="3,3"/>
      <line class="ln ln-thin" x1="34" y1="76" x2="116" y2="76" stroke-dasharray="3,3"/>
      <text class="lbl hl" x="57" y="42" text-anchor="middle" font-size="9">너비 같음</text>
-     <text class="lbl hl" x="98" y="40" text-anchor="middle" font-size="9">높이 같음</text>`, '0 0 120 96');
+     <text class="lbl hl" x="98" y="40" text-anchor="middle" font-size="9">높이 같음</text>`, '0 0 132 96');
 }
 function figGlassBox(){ // 유리상자에 넣고 펼치는 제3각법 원리
   return svgWrap(
@@ -460,6 +460,69 @@ function figGlassBox(){ // 유리상자에 넣고 펼치는 제3각법 원리
      <text class="lbl hl" x="60" y="14" text-anchor="middle" font-size="9">위에서</text>
      <text class="lbl hl" x="104" y="42" text-anchor="end" font-size="9">오른쪽에서</text>
      <text class="lbl hl" x="60" y="94" text-anchor="middle" font-size="9">앞에서</text>`, '0 0 120 100');
+}
+function fig6View(){ // 기본 6면도 배치 (제3각법)
+  const bx=(x,y,w,h,t)=>`<rect class="ln ln-outline" x="${x}" y="${y}" width="${w}" height="${h}"/>`+
+    `<text class="lbl" x="${x+w/2}" y="${y-3}" text-anchor="middle" style="font-size:5px">${t}</text>`;
+  return svgWrap(
+    bx(52,20,22,16,'평면도')+
+    bx(24,44,22,16,'좌측면도')+bx(52,44,22,16,'정면도')+bx(80,44,22,16,'우측면도')+bx(108,44,10,16,'배면도')+
+    bx(52,70,22,16,'저면도')+
+    `<line class="ln ln-center" x1="63" y1="16" x2="63" y2="90"/>
+     <line class="ln ln-center" x1="20" y1="52" x2="122" y2="52"/>
+     <text class="lbl acc" x="63" y="99" text-anchor="middle" style="font-size:5.5px">정면도를 가운데 두고 본 방향 그대로</text>`,
+    '0 10 130 96');
+}
+function figAngleMark(){ // 각법 기호 — 원뿔대의 옆면(사다리꼴) + 끝면(동심원)
+  // 교과서 96쪽 그림 그대로: 제3각법은 동심원이 왼쪽, 제1각법은 사다리꼴이 왼쪽.
+  // 사다리꼴은 두 경우 모두 작은 쪽이 왼쪽이다.
+  const trap = (x)=>`<path class="ln ln-outline" d="M${x} 14 L${x+24} 7 L${x+24} 33 L${x} 26 Z"/>`;
+  const circ = (cx)=>`<circle class="ln ln-outline" cx="${cx}" cy="20" r="12"/>`+
+                     `<circle class="ln ln-outline" cx="${cx}" cy="20" r="6"/>`+
+                     `<line class="ln ln-center" x1="${cx-16}" y1="20" x2="${cx+16}" y2="20"/>`+
+                     `<line class="ln ln-center" x1="${cx}" y1="4" x2="${cx}" y2="36"/>`;
+  return svgWrap(
+    `<g transform="translate(4,0)">${circ(16)}${trap(36)}
+      <line class="ln ln-center" x1="30" y1="20" x2="38" y2="20"/></g>
+     <text class="lbl acc" x="42" y="46" text-anchor="middle" style="font-size:6.5px">제3각법 기호</text>
+     <g transform="translate(70,0)">${trap(4)}${circ(44)}
+      <line class="ln ln-center" x1="26" y1="20" x2="30" y2="20"/></g>
+     <text class="lbl" x="108" y="46" text-anchor="middle" style="font-size:6.5px">제1각법 기호</text>
+     <rect class="ln ln-outline" x="26" y="58" width="94" height="26"/>
+     <line class="ln ln-outline" x1="26" y1="71" x2="120" y2="71"/>
+     <line class="ln ln-outline" x1="74" y1="58" x2="74" y2="84"/>
+     <text class="lbl" x="30" y="67" style="font-size:5.5px">도면명</text>
+     <text class="lbl" x="78" y="67" style="font-size:5.5px">척도</text>
+     <text class="lbl" x="30" y="80" style="font-size:5.5px">재질</text>
+     <text class="lbl acc" x="78" y="80" style="font-size:5.5px">투상 · 제3각법</text>
+     <text class="lbl" x="73" y="93" text-anchor="middle" style="font-size:5.5px">표제란에 적는다</text>`,
+    '0 0 150 98');
+}
+function figViewPick(){ // 숨은선이 적은 쪽을 고른다
+  return svgWrap(
+    `<text class="lbl acc" x="32" y="12" text-anchor="middle" style="font-size:6px">좋은 선택</text>
+     <rect class="ln ln-outline" x="12" y="20" width="40" height="26"/>
+     <path class="ln ln-outline" d="M12 34 h40"/>
+     <text class="lbl" x="32" y="56" text-anchor="middle" style="font-size:5.5px">숨은선 없음</text>
+     <text class="lbl" x="90" y="12" text-anchor="middle" style="font-size:6px">나쁜 선택</text>
+     <rect class="ln ln-outline" x="70" y="20" width="40" height="26"/>
+     <line class="ln ln-hidden" x1="70" y1="28" x2="110" y2="28"/>
+     <line class="ln ln-hidden" x1="70" y1="34" x2="110" y2="34"/>
+     <line class="ln ln-hidden" x1="70" y1="40" x2="110" y2="40"/>
+     <text class="lbl" x="90" y="56" text-anchor="middle" style="font-size:5.5px">숨은선 투성이</text>
+     <text class="lbl acc" x="60" y="72" text-anchor="middle" style="font-size:5.5px">숨은선이 적은 투상도를 고른다</text>`,
+    '0 0 120 80');
+}
+function figPlaceLong(){ // 배치 — 긴 물체는 눕힌다
+  return svgWrap(
+    `<text class="lbl acc" x="34" y="12" text-anchor="middle" style="font-size:6px">눕혀서 (O)</text>
+     <rect class="ln ln-outline" x="8" y="22" width="56" height="14"/>
+     <line class="ln ln-center" x1="4" y1="29" x2="68" y2="29"/>
+     <text class="lbl" x="94" y="12" text-anchor="middle" style="font-size:6px">세워서 (X)</text>
+     <rect class="ln ln-outline" x="87" y="18" width="14" height="46"/>
+     <line class="ln ln-center" x1="94" y1="14" x2="94" y2="68"/>
+     <text class="lbl acc" x="60" y="80" text-anchor="middle" style="font-size:5.5px">길이가 긴 물체는 길이 방향으로 안정되게</text>`,
+    '0 0 120 88');
 }
 function figTusangSummary(){ // 정리용 미니 요약
   const mini=(inner,x,label)=>`<g transform="translate(${x},4) scale(0.42)">${inner}</g>
@@ -500,6 +563,18 @@ const LESSON = [
          '평면도가 <b>아래</b>, 우측면도가 <b>왼쪽</b>에 와요.',
          '외우는 법: <b>제3각법 = 본 방향 그대로</b>, 제1각법 = 반대!'],
     ask:'도면을 받았을 때 제1각법인지 제3각법인지 어떻게 알 수 있을까요?' },
+  { t:'각법은 어떻게 표시할까', figs:[[figAngleMark(),'각법 기호와 표제란']],
+    pts:['도면을 받으면 <b>표제란의 "투상" 칸</b>을 보면 됩니다.',
+         '문자로 "제3각법"이라 적거나, <b>각법 기호</b>(원뿔대 그림)로 표시해요.',
+         '기호는 원뿔대를 그린 것 — <b>제3각법은 동심원이 왼쪽</b>, 제1각법은 반대예요.',
+         '한 도면 안에서 제1각법과 제3각법을 <b>섞어 쓸 수 없어요</b>.'],
+    ask:'표제란에 아무 표시도 없으면 어느 각법으로 읽어야 할까요? (힌트: KS 원칙)' },
+  { t:'기본 6면도 — 원래는 여섯 방향', figs:[[fig6View(),'제3각법 6면도 배치']],
+    pts:['상자의 여섯 면이니 투상도도 원래 <b>여섯 개</b>예요.',
+         '정면도 · 평면도 · 우측면도 · 좌측면도 · 저면도 · 배면도',
+         '정면도를 가운데 두고 <b>본 방향 그대로</b> 둘러 배치해요.',
+         '실제 도면은 이 중 꼭 필요한 것만 골라 그립니다.'],
+    ask:'여섯 개를 다 그리면 무엇이 불편할까요?' },
   { t:'3면도 읽는 요령', figs:[[figAlign(),'너비·높이가 서로 맞음']],
     pts:['<b>세로 길이(높이)</b>는 정면도와 우측면도가 <b>같아요</b>.',
          '<b>가로 길이(너비)</b>는 정면도와 평면도가 <b>같아요</b>.',
@@ -515,6 +590,18 @@ const LESSON = [
          '구멍이나 속이 빈 부분이 대표적이에요.',
          '보이는 모서리는 <b>굵은 실선(외형선)</b>이에요.'],
     ask:'숨은선이 너무 많아지면 어떻게 하면 좋을까요? (힌트: 단면도)' },
+  { t:'투상도 선정 — 몇 개를 그릴까', figs:[[figViewPick(),'숨은선이 적은 쪽']],
+    pts:['정면도는 물체의 <b>모양과 특징이 가장 잘 드러나는 면</b>으로 고릅니다.',
+         '나머지는 <b>숨은선이 적은</b> 투상도를 고르고, 수가 같으면 저면도보다 <b>평면도</b>, 좌측면도보다 <b>우측면도</b>.',
+         '원기둥·얇은 판처럼 단면이 일정하면 <b>치수 보조기호(Ø, □, t)로 1면도</b>만 그려도 돼요.',
+         '정면도 + 하나면 충분하면 2면도, 복잡하면 3면도로 그립니다.'],
+    ask:'Ø30이라고만 적힌 1면도로 어떻게 원기둥인 걸 알 수 있을까요?' },
+  { t:'투상도 배치 — 어떻게 놓고 그릴까', figs:[[figPlaceLong(),'긴 물체는 눕혀서']],
+    pts:['길이가 긴 물체는 <b>길이 방향으로 눕혀</b> 안정된 상태로 놓고 그려요.',
+         '벨트 풀리·기어처럼 <b>원형인 물체</b>는 원형으로 보이는 쪽을 정면도로 쓰지 않아요.',
+         '선반 같은 <b>원통 절삭</b> 가공품은 중심선을 수평으로, 가공 방향과 같게 놓아요.',
+         '평면 절삭 가공품은 <b>가공면이 잘 보이도록</b> 놓고 그립니다.'],
+    ask:'기어를 정면에서 본 동그란 모습으로 그리면 무엇을 알 수 없을까요?' },
   { q:'제3각법에서 <b>평면도</b>는 정면도의 어디에 그릴까요?',
     choices:['위','아래','왼쪽','오른쪽'], answer:0,
     ex:'제3각법은 본 방향 그대로 — 위에서 봤으니 <b>위</b>에 그려요. (제1각법은 아래)' },
@@ -528,6 +615,8 @@ const LESSON = [
     pts:['투상도 = 3D 물체를 <b>여러 방향에서 본</b> 2D 그림',
          '투상법 4가지: <b>정투상 · 등각 · 사투상 · 투시</b> (도면은 정투상)',
          '<b>제3각법</b> = 본 방향 그대로 (평면도 위 · 우측면도 오른쪽)',
+         '기본 6면도 중 <b>필요한 것만</b> — 숨은선이 적은 쪽을 고른다',
+         '각법은 <b>표제란 "투상" 칸</b>에 문자나 기호로 표시 (혼용 금지)',
          '높이는 정면도=우측면도, 너비는 정면도=평면도',
          '안 보이는 모서리는 <b>숨은선(파선)</b>'],
     ask:'이제 직접 풀어볼까요? (닫기 → 모드 1~3 또는 종합 점검)' },
