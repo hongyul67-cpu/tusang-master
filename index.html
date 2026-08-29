@@ -102,7 +102,6 @@
   .toggle-row .btn.off{background:transparent;border:1px solid rgba(234,244,255,0.3);color:var(--text);}
 
   /* HUD (fx) */
-  #fx-hud{margin-bottom:12px;}
 
   /* ===== 수업 모드(칠판·프로젝터용) ===== */
   .lesson{position:fixed;inset:0;z-index:60;background:var(--bg-deep);display:flex;flex-direction:column;padding:2vh 3vw 1vh;}
@@ -221,7 +220,7 @@
         <div class="mode-card" onclick="openMode('m2')">
           <div class="num">모드 2</div>
           <div class="title">🧩 3면도 배치·이름</div>
-          <div class="desc">제3각법에서 정면도·평면도·우측면도 위치를 익혀요. (8문제)</div>
+          <div class="desc">제3각법에서 정면도·평면도·우측면도 위치를 익혀요. (7문제)</div>
         </div>
         <div class="mode-card" onclick="openMode('m3')">
           <div class="num">모드 3</div>
@@ -273,7 +272,6 @@
       <span class="progress" id="q-progress"></span>
       <span class="score-pill" id="q-score"></span>
     </div>
-    <div id="fx-hud"></div>
     <div class="prompt" id="q-prompt"></div>
     <div id="q-stage"></div>
     <div class="choices" id="q-choices"></div>
@@ -410,36 +408,34 @@ function projFig(kind){
     `<rect class="ln ln-thin" x="18" y="18" width="30" height="24"/>
      <rect class="ln ln-outline" x="18" y="50" width="30" height="30"/>
      <rect class="ln ln-thin" x="56" y="50" width="24" height="30"/>
-     <line class="ln ln-center" x1="33" y1="14" x2="33" y2="84"/>
-     <text class="lbl" x="33" y="96" text-anchor="middle">3면도</text>`);
+     <line class="ln ln-center" x1="33" y1="14" x2="33" y2="84"/>`);
   if(kind==='iso') return svgWrap(
     `<path class="face-t" d="M40 34 l20 -12 l20 12 l-20 12 z"/>
      <path class="face-f" d="M40 34 v28 l20 12 v-28 z"/>
-     <path class="face-s" d="M80 34 v28 l-20 12 v-28 z"/>
-     <text class="lbl" x="60" y="92" text-anchor="middle">120° · 3축 같은 척도</text>`);
+     <path class="face-s" d="M80 34 v28 l-20 12 v-28 z"/>`);
   if(kind==='oblique') return svgWrap(
     `<rect class="face-f" x="30" y="44" width="34" height="34"/>
      <path class="face-t" d="M30 44 l18 -14 h34 l-18 14 z"/>
-     <path class="face-s" d="M64 44 l18 -14 v34 l-18 14 z"/>
-     <text class="lbl" x="60" y="92" text-anchor="middle">정면=실형, 옆은 경사</text>`);
+     <path class="face-s" d="M64 44 l18 -14 v34 l-18 14 z"/>`);
   if(kind==='persp') return svgWrap(
     `<circle cx="96" cy="30" r="2.2" fill="var(--accent)"/>
      <rect class="face-f" x="26" y="46" width="34" height="30"/>
      <path class="ln ln-thin" d="M26 46 L96 30 M60 46 L96 30 M26 76 L96 30 M60 76 L96 30"/>
-     <path class="face-t" d="M26 46 L45 39 L79 39 L60 46 z" opacity="0.7"/>
-     <text class="lbl" x="60" y="92" text-anchor="middle">소실점으로 모임(원근)</text>`);
+     <path class="face-t" d="M26 46 L45 39 L79 39 L60 46 z" opacity="0.7"/>`);
   return '';
 }
-function layout3rd(hl){
+function layout3rd(hl, hideNames){
   // 제3각법 배치: 평면도(위) · 정면도(가운데) · 우측면도(오른쪽)
+  // hideNames=true 면 이름을 지운다 — 이름을 물어보는 문제에서 그림이 정답을 흘리지 않도록 (규약 §6)
   const c = k => hl===k ? ' hl' : '';
+  const nm = (k, t) => hideNames ? (hl===k ? '?' : '') : t;
   return svgWrap(
     `<rect class="ln ln-outline${c('top')}" x="40" y="14" width="34" height="22"/>
-     <text class="lbl${c('top')}" x="57" y="10" text-anchor="middle">평면도</text>
+     <text class="lbl${c('top')}" x="57" y="10" text-anchor="middle">${nm('top','평면도')}</text>
      <rect class="ln ln-outline${c('front')}" x="40" y="44" width="34" height="30"/>
-     <text class="lbl${c('front')}" x="57" y="86" text-anchor="middle">정면도</text>
+     <text class="lbl${c('front')}" x="57" y="86" text-anchor="middle">${nm('front','정면도')}</text>
      <rect class="ln ln-outline${c('side')}" x="82" y="44" width="24" height="30"/>
-     <text class="lbl${c('side')}" x="94" y="86" text-anchor="middle">우측면도</text>
+     <text class="lbl${c('side')}" x="94" y="86" text-anchor="middle">${nm('side','우측면도')}</text>
      <line class="ln ln-center" x1="57" y1="8" x2="57" y2="80"/>
      <line class="ln ln-center" x1="34" y1="59" x2="112" y2="59"/>`, '0 -8 120 108');
 }
@@ -857,7 +853,7 @@ function buildM2(){
   const pos=[['top','평면도'],['front','정면도'],['side','우측면도']];
   shuffle(pos).forEach(([k,nm])=>{
     const opts=['정면도','평면도','우측면도','저면도'];
-    qs.push({ prompt:'제3각법 배치예요. 주황색으로 강조된 자리의 투상도 이름은?', stage:layout3rd(k),
+    qs.push({ prompt:'제3각법 배치예요. 주황색으로 강조된 자리의 투상도 이름은?', stage:layout3rd(k,true),
       choices:shuffle(opts.map(o=>({t:o, ok:o===nm}))), ex:`제3각법은 본 방향 그대로 배치 — 위=평면도, 가운데=정면도, 오른쪽=우측면도.` });
   });
   // B타입: 배치 규칙 O/X 지식
@@ -914,12 +910,13 @@ function rankReset(){
 }
 function goHub(){ showScreen('screen-hub'); paintRank(); }
 function openLearn(){ renderLearn(); showScreen('screen-learn'); }
-let hudInit=false;
 function openMode(mode){
   S.mode=mode; S.qs=MODE_META[mode].build(); S.wrong=[]; S.rev=[]; S.idx=0; S.score=0; S.start=Date.now();
   clearReview();
   bumpTry(mode);
-  if(window.FX){ FX.reset(); if(!hudInit){ FX.hud(document.getElementById('fx-hud')); hudInit=true; } }
+  /* 점수·콤보는 이 도구가 직접 세어 보여 준다(위 '점수' 칸). fx.js 의 HUD 는 쓰지 않는다 —
+     FX.ok/no 를 쓰지 않으므로 값이 0 에서 멈춰 화면에 점수가 두 개로 보였다. */
+  if(window.FX) FX.reset();
   showScreen('screen-quiz');
   renderQ();
 }
